@@ -1856,20 +1856,19 @@ function tryLogin() {
   const pass = loginPassword.value.trim();
 
   if (email === "superadmin@resq.com" && pass === "ResQAdmin123") {
-    // 1. Hide the error and login screen
+    // 1. Hide the login screen
     loginError.style.display = "none";
     loginView.style.display = "none";
     
-    // 2. Show the app view using "grid" to maintain the layout 
+    // 2. Show the dashboard as a GRID (matches your CSS)
     appView.style.display = "grid"; 
     
-    // 3. CRITICAL: Initialize all dashboard data 
+    // 3. CRITICAL: Start the dashboard data loading
     bootstrap(); 
     
-    console.log("Login successful: Dashboard initialized.");
+    console.log("Login Successful");
   } else {
     loginError.style.display = "block";
-    // Optional: Add a shake effect here for better feedback
   }
 }
 
