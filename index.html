@@ -1,287 +1,1433 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>Monitoring System</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
-    body { background: #0b1120; color: #e5e7eb; min-height: 100vh; display: flex; flex-direction: column; }
-    .app { display: grid; grid-template-rows: auto 1fr; min-height: 100vh; }
-    header { padding: 1rem 1.5rem; border-bottom: 1px solid #1f2937; display: flex; align-items: center; justify-content: space-between; background: radial-gradient(circle at top left, #1f2937, #020617); }
-    .logo { display: flex; align-items: center; gap: 0.6rem; }
-    .logo-badge { width: 32px; height: 32px; border-radius: 999px; background: linear-gradient(135deg, #22c55e, #22d3ee); display: flex; align-items: center; justify-content: center; font-weight: 700; color: #020617; font-size: 0.9rem; box-shadow: 0 0 15px rgba(34,197,94,0.6); }
-    .logo-text-title { font-weight: 600; letter-spacing: 0.04em; font-size: 1rem; }
-    .logo-text-sub { font-size: 0.7rem; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.12em; }
-    .status-pill { padding: 0.25rem 0.8rem; border-radius: 999px; background: rgba(22,163,74,0.15); border: 1px solid rgba(34,197,94,0.4); font-size: 0.75rem; display: inline-flex; align-items: center; gap: 0.35rem; color: #bbf7d0; }
-    .status-dot { width: 8px; height: 8px; border-radius: 999px; background: #22c55e; box-shadow: 0 0 8px rgba(34,197,94,0.9); }
-    main { display: grid; grid-template-columns: 2fr 3fr 2fr; gap: 1.5rem; padding: 1.5rem; align-items: flex-start; }
-    @media (max-width: 1100px) {
-      main { grid-template-columns: 1fr 1fr; grid-auto-rows: minmax(0, auto); }
-      .col-wide { grid-column: 1 / -1; }
-    }
-    @media (max-width: 768px) {
-      main { grid-template-columns: 1fr; }
-    }
-    .card { background: rgba(15,23,42,0.9); border-radius: 0.9rem; border: 1px solid rgba(31,41,55,0.9); padding: 1rem 1.1rem; box-shadow: 0 20px 45px rgba(0,0,0,0.45); backdrop-filter: blur(14px); }
-    .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.7rem; }
-    .card-title { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.12em; color: #9ca3af; }
-    .pill { font-size: 0.65rem; padding: 0.2rem 0.6rem; border-radius: 999px; border: 1px solid #1f2937; color: #9ca3af; }
-    .metrics-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 0.75rem; margin-top: 0.5rem; }
-    .metric { padding: 0.5rem 0.6rem; border-radius: 0.7rem; background: linear-gradient(135deg, rgba(15,23,42,0.95), rgba(15,23,42,0.4)); border: 1px solid rgba(31,41,55,0.9); }
-    .metric-label { font-size: 0.75rem; color: #9ca3af; margin-bottom: 0.1rem; }
-    .metric-value { font-size: 1.1rem; font-weight: 600; }
-    .metric-tag { font-size: 0.65rem; color: #6b7280; margin-left: 0.25rem; }
-    .chip-row { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.6rem; }
-    .chip { font-size: 0.65rem; padding: 0.18rem 0.5rem; border-radius: 999px; border: 1px solid #1f2937; color: #9ca3af; background: rgba(15,23,42,0.85); }
-    .chip.critical { border-color: rgba(248,113,113,0.4); color: #fecaca; background: rgba(127,29,29,0.3); }
-    .chip.warn { border-color: rgba(251,191,36,0.4); color: #fef3c7; background: rgba(120,53,15,0.35); }
-    .chip.ok { border-color: rgba(34,197,94,0.45); color: #bbf7d0; background: rgba(22,101,52,0.4); }
-    .timeline { margin-top: 0.4rem; max-height: 260px; overflow-y: auto; padding-right: 0.3rem; }
-    .event { display: flex; gap: 0.55rem; padding: 0.45rem 0.2rem; border-radius: 0.6rem; transition: background 0.15s ease; align-items: flex-start; }
-    .event:hover { background: rgba(15,23,42,0.9); }
-    .event-marker { width: 8px; height: 8px; border-radius: 999px; margin-top: 0.3rem; }
-    .event-marker.critical { background: #f97373; box-shadow: 0 0 8px rgba(248,113,113,0.9); }
-    .event-marker.warn { background: #fbbf24; box-shadow: 0 0 8px rgba(251,191,36,0.9); }
-    .event-marker.ok { background: #22c55e; box-shadow: 0 0 8px rgba(34,197,94,0.9); }
-    .event-main { flex: 1; }
-    .event-title { font-size: 0.8rem; font-weight: 500; margin-bottom: 0.1rem; }
-    .event-meta { font-size: 0.7rem; color: #6b7280; display: flex; justify-content: space-between; gap: 0.4rem; }
-    .badge { padding: 0.12rem 0.45rem; border-radius: 999px; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.08em; }
-    .badge.critical { background: rgba(127,29,29,0.8); color: #fecaca; }
-    .badge.warn { background: rgba(120,53,15,0.9); color: #fed7aa; }
-    .badge.ok { background: rgba(22,101,52,0.9); color: #bbf7d0; }
-    .systems { margin-top: 0.4rem; }
-    .system-row { display: flex; align-items: center; justify-content: space-between; padding: 0.4rem 0.2rem; border-bottom: 1px dashed rgba(31,41,55,0.7); font-size: 0.78rem; }
-    .system-row:last-child { border-bottom: none; }
-    .system-name { color: #e5e7eb; }
-    .system-status { display: flex; align-items: center; gap: 0.25rem; }
-    .dot { width: 7px; height: 7px; border-radius: 999px; }
-    .dot.ok { background: #22c55e; }
-    .dot.warn { background: #fbbf24; }
-    .dot.critical { background: #f97373; }
-    .system-note { color: #6b7280; font-size: 0.7rem; margin-left: 0.4rem; }
-    .footer { padding: 0.7rem 1.5rem 1rem; border-top: 1px solid #111827; font-size: 0.7rem; color: #6b7280; display: flex; justify-content: space-between; align-items: center; background: #020617; }
-    .controls { display: flex; gap: 0.4rem; }
-    button { border-radius: 999px; border: 1px solid #1f2937; padding: 0.25rem 0.7rem; font-size: 0.7rem; background: #020617; color: #e5e7eb; cursor: pointer; }
-    button.primary { background: #22c55e; border-color: #16a34a; color: #022c22; font-weight: 500; }
-    button:hover { opacity: 0.9; }
-  </style>
-</head>
-<body>
-  <div class="app">
-    <header>
-      <div class="logo">
-        <div class="logo-badge">MS</div>
-        <div>
-          <div class="logo-text-title">Monitoring System</div>
-          <div class="logo-text-sub">Operational overview · Demo only</div>
-        </div>
-      </div>
-      <div class="status-pill">
-        <span class="status-dot"></span>
-        Live simulation · No backend
-      </div>
-    </header>
+  <head>
+    <meta charset="utf-8" />
+    <title>Monitoring System | Admin Panel</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Monitoring System - Admin Dashboard (Frontend only)"
+    />
+    <meta name="theme-color" content="#020617" />
 
-    <main>
-      <!-- Left: High-level metrics -->
-      <section class="card">
-        <div class="card-header">
-          <div class="card-title">Global Status</div>
-          <span class="pill">Last 15 min</span>
-        </div>
-        <div class="metrics-grid">
-          <div class="metric">
-            <div class="metric-label">Active Clients</div>
-            <div class="metric-value">12<span class="metric-tag">/ 24 registered</span></div>
-          </div>
-          <div class="metric">
-            <div class="metric-label">Checks / min</div>
-            <div class="metric-value" id="checksPerMin">84</div>
-          </div>
-          <div class="metric">
-            <div class="metric-label">Avg. Response Time</div>
-            <div class="metric-value" id="avgLatency">142<span class="metric-tag">ms</span></div>
-          </div>
-          <div class="metric">
-            <div class="metric-label">Error Rate</div>
-            <div class="metric-value" id="errorRate">0.7<span class="metric-tag">%</span></div>
-          </div>
-        </div>
-        <div class="chip-row">
-          <span class="chip critical">2 critical alerts</span>
-          <span class="chip warn">3 warnings</span>
-          <span class="chip ok">All core services online</span>
-        </div>
-      </section>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      rel="preconnect"
+      href="https://fonts.gstatic.com"
+      crossorigin
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
 
-      <!-- Middle: Live “events” timeline (simulated) -->
-      <section class="card col-wide">
-        <div class="card-header">
-          <div class="card-title">Recent Health Events (Simulated)</div>
-          <span class="pill">Auto-refresh · In browser only</span>
-        </div>
-        <div class="timeline" id="events"></div>
-      </section>
-
-      <!-- Right: Systems view -->
-      <section class="card">
-        <div class="card-header">
-          <div class="card-title">Systems Overview</div>
-          <span class="pill">Static configuration</span>
-        </div>
-        <div class="systems" id="systems">
-          <!-- Populated by JS -->
-        </div>
-      </section>
-    </main>
-
-    <div class="footer">
-      <span>This page is a pure frontend demo. No backend calls are made.</span>
-      <div class="controls">
-        <button id="btnSpike">Simulate spike</button>
-        <button class="primary" id="btnReset">Reset to normal</button>
-      </div>
-    </div>
-  </div>
-
-  <script>
-    // Simple in-browser simulation of monitoring data
-
-    const eventsEl = document.getElementById("events");
-    const checksPerMinEl = document.getElementById("checksPerMin");
-    const avgLatencyEl = document.getElementById("avgLatency");
-    const errorRateEl = document.getElementById("errorRate");
-    const systemsEl = document.getElementById("systems");
-
-    let baseState = {
-      checksPerMin: 80,
-      avgLatency: 140,
-      errorRate: 0.8,
-      mode: "normal"
-    };
-
-    const systems = [
-      { name: "API Gateway", status: "ok", note: "Healthy" },
-      { name: "Auth Service", status: "ok", note: "Normal" },
-      { name: "Notification Engine", status: "warn", note: "Queue delay" },
-      { name: "Reporting", status: "ok", note: "Scheduled" },
-      { name: "Database Cluster", status: "ok", note: "Replicas in sync" },
-      { name: "External Webhooks", status: "warn", note: "3rd party latency" }
-    ];
-
-    function renderSystems() {
-      systemsEl.innerHTML = "";
-      systems.forEach(s => {
-        const row = document.createElement("div");
-        row.className = "system-row";
-        row.innerHTML = `
-          <div>
-            <span class="system-name">${s.name}</span>
-            <span class="system-note">${s.note}</span>
-          </div>
-          <div class="system-status">
-            <span class="dot ${s.status}"></span>
-            <span>${s.status.toUpperCase()}</span>
-          </div>
-        `;
-        systemsEl.appendChild(row);
-      });
-    }
-
-    function addEvent(kind, title, detail) {
-      const event = document.createElement("div");
-      event.className = "event";
-      const markerClass = kind === "critical" ? "critical" : kind === "warn" ? "warn" : "ok";
-      const badgeClass = markerClass;
-      const now = new Date();
-      const time = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
-
-      event.innerHTML = `
-        <div class="event-marker ${markerClass}"></div>
-        <div class="event-main">
-          <div class="event-title">${title}</div>
-          <div class="event-meta">
-            <span>${detail}</span>
-            <span>${time}</span>
-          </div>
-        </div>
-        <div>
-          <span class="badge ${badgeClass}">${kind.toUpperCase()}</span>
-        </div>
-      `;
-      eventsEl.prepend(event);
-      // Keep last ~20
-      while (eventsEl.children.length > 20) {
-        eventsEl.removeChild(eventsEl.lastChild);
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont,
+          "Segoe UI", sans-serif;
       }
-    }
-
-    function renderMetrics() {
-      checksPerMinEl.textContent = Math.round(baseState.checksPerMin);
-      avgLatencyEl.textContent = Math.round(baseState.avgLatency) + "";
-      errorRateEl.textContent = baseState.errorRate.toFixed(1);
-    }
-
-    function randomTick() {
-      const drift = baseState.mode === "spike" ? 10 : 3;
-      baseState.checksPerMin += (Math.random() - 0.5) * drift;
-      baseState.avgLatency += (Math.random() - 0.5) * (baseState.mode === "spike" ? 40 : 10);
-      baseState.errorRate += (Math.random() - 0.5) * (baseState.mode === "spike" ? 0.8 : 0.2);
-
-      baseState.checksPerMin = Math.max(20, Math.min(250, baseState.checksPerMin));
-      baseState.avgLatency = Math.max(40, Math.min(800, baseState.avgLatency));
-      baseState.errorRate = Math.max(0, Math.min(15, baseState.errorRate));
-
-      if (Math.random() < (baseState.mode === "spike" ? 0.6 : 0.3)) {
-        const r = Math.random();
-        if (r < 0.2) {
-          addEvent(
-            "critical",
-            "Client timeout escalation",
-            "Multiple checks exceeded latency SLO"
-          );
-        } else if (r < 0.6) {
-          addEvent(
-            "warn",
-            "Elevated response time",
-            "Latency moving above baseline for some clients"
-          );
-        } else {
-          addEvent(
-            "ok",
-            "Health check OK",
-            "All monitored endpoints responded within threshold"
-          );
+      body {
+        background: radial-gradient(circle at top, #020617 0, #020617 35%, #000 100%);
+        color: #e5e7eb;
+        min-height: 100vh;
+      }
+      .app-shell {
+        display: grid;
+        grid-template-columns: 240px minmax(0, 1fr);
+        min-height: 100vh;
+      }
+      @media (max-width: 900px) {
+        .app-shell {
+          grid-template-columns: 1fr;
+          grid-template-rows: auto 1fr;
         }
       }
-      renderMetrics();
-    }
+      /* Sidebar */
+      .sidebar {
+        border-right: 1px solid #111827;
+        background: #020617;
+        padding: 1.1rem 1rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1.2rem;
+      }
+      @media (max-width: 900px) {
+        .sidebar {
+          flex-direction: row;
+          align-items: center;
+          justify-content: space-between;
+          border-right: none;
+          border-bottom: 1px solid #111827;
+        }
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+      }
+      .brand-badge {
+        width: 34px;
+        height: 34px;
+        border-radius: 999px;
+        background: conic-gradient(from 180deg, #22c55e, #22d3ee, #22c55e);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.9rem;
+        font-weight: 700;
+        color: #020617;
+        box-shadow: 0 0 18px rgba(34, 197, 94, 0.75);
+      }
+      .brand-text-main {
+        font-weight: 600;
+        letter-spacing: 0.05em;
+        font-size: 0.95rem;
+        text-transform: uppercase;
+      }
+      .brand-text-sub {
+        font-size: 0.7rem;
+        color: #6b7280;
+      }
+      .nav {
+        display: flex;
+        flex-direction: column;
+        gap: 0.2rem;
+      }
+      @media (max-width: 900px) {
+        .nav {
+          flex-direction: row;
+          flex-wrap: wrap;
+        }
+      }
+      .nav-item {
+        display: flex;
+        align-items: center;
+        gap: 0.45rem;
+        padding: 0.55rem 0.7rem;
+        border-radius: 0.6rem;
+        cursor: pointer;
+        color: #9ca3af;
+        font-size: 0.85rem;
+        border: 1px solid transparent;
+      }
+      .nav-item:hover {
+        background: rgba(15, 23, 42, 0.9);
+      }
+      .nav-item.active {
+        color: #e5e7eb;
+        background: linear-gradient(135deg, #0f172a, #020617);
+        border-color: rgba(55, 65, 81, 0.8);
+      }
+      .nav-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 999px;
+        background: #22c55e;
+        box-shadow: 0 0 8px rgba(34, 197, 94, 1);
+      }
+      .nav-label-main {
+        font-weight: 500;
+      }
+      .nav-label-sub {
+        font-size: 0.7rem;
+        color: #6b7280;
+      }
+      .nav-text {
+        display: flex;
+        flex-direction: column;
+      }
+      .sidebar-footer {
+        margin-top: auto;
+        font-size: 0.7rem;
+        color: #6b7280;
+      }
+      /* Main */
+      .main {
+        padding: 1.2rem 1.5rem 1.4rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+      }
+      .main-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        flex-wrap: wrap;
+      }
+      .main-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+      }
+      .main-subtitle {
+        font-size: 0.8rem;
+        color: #9ca3af;
+        margin-top: 0.1rem;
+      }
+      .main-actions {
+        display: flex;
+        gap: 0.4rem;
+        flex-wrap: wrap;
+      }
+      button {
+        border-radius: 999px;
+        border: 1px solid #1f2937;
+        padding: 0.4rem 0.8rem;
+        font-size: 0.8rem;
+        background: #020617;
+        color: #e5e7eb;
+        cursor: pointer;
+      }
+      button.primary {
+        background: #22c55e;
+        border-color: #16a34a;
+        color: #022c22;
+        font-weight: 500;
+      }
+      button:hover {
+        opacity: 0.9;
+      }
+      .pill {
+        font-size: 0.7rem;
+        padding: 0.2rem 0.6rem;
+        border-radius: 999px;
+        border: 1px solid rgba(31, 41, 55, 0.9);
+        color: #9ca3af;
+      }
+      .pill.success {
+        border-color: rgba(34, 197, 94, 0.6);
+        background: rgba(22, 163, 74, 0.1);
+        color: #bbf7d0;
+      }
+      .pill.warn {
+        border-color: rgba(251, 191, 36, 0.5);
+        background: rgba(120, 53, 15, 0.2);
+        color: #fef3c7;
+      }
+      .pill.critical {
+        border-color: rgba(248, 113, 113, 0.75);
+        background: rgba(127, 29, 29, 0.35);
+        color: #fecaca;
+      }
+      .pill-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 999px;
+        margin-right: 0.35rem;
+        display: inline-block;
+      }
+      /* Cards & layout */
+      .cards {
+        display: grid;
+        grid-template-columns: 2fr 3fr 2fr;
+        gap: 1rem;
+        align-items: flex-start;
+      }
+      @media (max-width: 1100px) {
+        .cards {
+          grid-template-columns: 1fr 1fr;
+        }
+        .col-span-2 {
+          grid-column: 1 / -1;
+        }
+      }
+      @media (max-width: 800px) {
+        .cards {
+          grid-template-columns: 1fr;
+        }
+      }
+      .card {
+        background: rgba(15, 23, 42, 0.95);
+        border-radius: 0.9rem;
+        border: 1px solid rgba(31, 41, 55, 0.9);
+        padding: 0.85rem 0.9rem;
+        box-shadow: 0 22px 50px rgba(0, 0, 0, 0.45);
+        backdrop-filter: blur(16px);
+      }
+      .card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 0.6rem;
+      }
+      .card-title {
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: #9ca3af;
+      }
+      .card-subtitle {
+        font-size: 0.7rem;
+        color: #6b7280;
+        margin-top: 0.1rem;
+      }
+      .metrics-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.6rem;
+        margin-top: 0.3rem;
+      }
+      .metric {
+        border-radius: 0.7rem;
+        padding: 0.45rem 0.55rem;
+        border: 1px solid rgba(31, 41, 55, 0.9);
+        background: linear-gradient(135deg, rgba(15, 23, 42, 0.95), #020617);
+      }
+      .metric-label {
+        font-size: 0.72rem;
+        color: #9ca3af;
+      }
+      .metric-value {
+        font-size: 1.05rem;
+        font-weight: 600;
+        margin-top: 0.1rem;
+      }
+      .metric-tag {
+        font-size: 0.7rem;
+        color: #6b7280;
+        margin-left: 0.25rem;
+      }
+      .chip-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.35rem;
+        margin-top: 0.6rem;
+      }
+      .chip {
+        font-size: 0.68rem;
+        padding: 0.16rem 0.5rem;
+        border-radius: 999px;
+        border: 1px solid #1f2937;
+        color: #9ca3af;
+        background: rgba(2, 6, 23, 0.95);
+      }
+      .chip.ok {
+        border-color: rgba(34, 197, 94, 0.6);
+        color: #bbf7d0;
+        background: rgba(22, 101, 52, 0.4);
+      }
+      .chip.warn {
+        border-color: rgba(251, 191, 36, 0.6);
+        color: #fef3c7;
+        background: rgba(120, 53, 15, 0.4);
+      }
+      .chip.critical {
+        border-color: rgba(248, 113, 113, 0.75);
+        color: #fecaca;
+        background: rgba(127, 29, 29, 0.5);
+      }
+      /* Timeline */
+      .timeline {
+        margin-top: 0.4rem;
+        max-height: 260px;
+        overflow-y: auto;
+        padding-right: 0.3rem;
+      }
+      .event {
+        display: flex;
+        gap: 0.55rem;
+        padding: 0.4rem 0.2rem;
+        border-radius: 0.6rem;
+        transition: background 0.15s ease;
+        align-items: flex-start;
+      }
+      .event:hover {
+        background: rgba(15, 23, 42, 0.95);
+      }
+      .event-marker {
+        width: 9px;
+        height: 9px;
+        border-radius: 999px;
+        margin-top: 0.3rem;
+      }
+      .event-marker.ok {
+        background: #22c55e;
+        box-shadow: 0 0 8px rgba(34, 197, 94, 1);
+      }
+      .event-marker.warn {
+        background: #fbbf24;
+        box-shadow: 0 0 8px rgba(251, 191, 36, 1);
+      }
+      .event-marker.critical {
+        background: #f97373;
+        box-shadow: 0 0 8px rgba(248, 113, 113, 1);
+      }
+      .event-main {
+        flex: 1;
+      }
+      .event-title {
+        font-size: 0.8rem;
+        font-weight: 500;
+      }
+      .event-detail {
+        font-size: 0.72rem;
+        color: #9ca3af;
+        margin-top: 0.05rem;
+      }
+      .event-meta {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 0.15rem;
+        font-size: 0.7rem;
+        color: #6b7280;
+        gap: 0.5rem;
+      }
+      .badge {
+        padding: 0.13rem 0.4rem;
+        border-radius: 999px;
+        font-size: 0.65rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+      .badge.ok {
+        background: rgba(22, 101, 52, 0.9);
+        color: #bbf7d0;
+      }
+      .badge.warn {
+        background: rgba(120, 53, 15, 0.9);
+        color: #fed7aa;
+      }
+      .badge.critical {
+        background: rgba(127, 29, 29, 0.9);
+        color: #fecaca;
+      }
+      /* Systems list */
+      .systems {
+        margin-top: 0.4rem;
+      }
+      .system-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.4rem 0.2rem;
+        border-bottom: 1px dashed rgba(31, 41, 55, 0.7);
+        font-size: 0.78rem;
+      }
+      .system-row:last-child {
+        border-bottom: none;
+      }
+      .system-name {
+        color: #e5e7eb;
+      }
+      .system-note {
+        color: #6b7280;
+        font-size: 0.7rem;
+        margin-left: 0.3rem;
+      }
+      .system-status {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+      }
+      .dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 999px;
+      }
+      .dot.ok {
+        background: #22c55e;
+      }
+      .dot.warn {
+        background: #fbbf24;
+      }
+      .dot.critical {
+        background: #f97373;
+      }
+      /* Clients page */
+      .table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.78rem;
+        margin-top: 0.3rem;
+      }
+      .table th,
+      .table td {
+        padding: 0.45rem 0.35rem;
+        text-align: left;
+      }
+      .table thead {
+        border-bottom: 1px solid #111827;
+        color: #9ca3af;
+        font-size: 0.74rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+      .table tbody tr:nth-child(even) {
+        background: rgba(15, 23, 42, 0.7);
+      }
+      .table tbody tr:nth-child(odd) {
+        background: rgba(15, 23, 42, 0.95);
+      }
+      .label {
+        font-size: 0.68rem;
+        padding: 0.15rem 0.45rem;
+        border-radius: 999px;
+      }
+      .label.online {
+        background: rgba(22, 163, 74, 0.2);
+        color: #bbf7d0;
+      }
+      .label.offline {
+        background: rgba(127, 29, 29, 0.3);
+        color: #fecaca;
+      }
+      .label.degraded {
+        background: rgba(120, 53, 15, 0.35);
+        color: #fed7aa;
+      }
+      .muted {
+        color: #9ca3af;
+      }
+      .search-row {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        margin-top: 0.3rem;
+      }
+      .search-row input {
+        flex: 1;
+        border-radius: 999px;
+        border: 1px solid #1f2937;
+        padding: 0.35rem 0.7rem;
+        background: #020617;
+        color: #e5e7eb;
+        font-size: 0.78rem;
+      }
+      .search-row input::placeholder {
+        color: #4b5563;
+      }
+      /* Alerts page */
+      .alert-list {
+        margin-top: 0.4rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.4rem;
+      }
+      .alert-item {
+        border-radius: 0.7rem;
+        border: 1px solid rgba(31, 41, 55, 0.9);
+        padding: 0.5rem 0.6rem;
+        background: rgba(15, 23, 42, 0.95);
+      }
+      .alert-head {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.8rem;
+        font-weight: 500;
+      }
+      .alert-detail {
+        font-size: 0.74rem;
+        color: #9ca3af;
+        margin-top: 0.15rem;
+      }
+      .alert-meta {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.7rem;
+        margin-top: 0.2rem;
+        color: #6b7280;
+      }
+      /* Settings */
+      .form-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.7rem;
+        margin-top: 0.4rem;
+      }
+      @media (max-width: 800px) {
+        .form-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+      .field {
+        font-size: 0.78rem;
+      }
+      .field label {
+        display: block;
+        color: #9ca3af;
+        margin-bottom: 0.18rem;
+      }
+      .field input,
+      .field select {
+        width: 100%;
+        border-radius: 0.55rem;
+        border: 1px solid #1f2937;
+        padding: 0.35rem 0.6rem;
+        background: #020617;
+        color: #e5e7eb;
+        font-size: 0.78rem;
+      }
+      .field small {
+        display: block;
+        margin-top: 0.12rem;
+        color: #6b7280;
+        font-size: 0.68rem;
+      }
+      .settings-note {
+        margin-top: 0.5rem;
+        font-size: 0.72rem;
+        color: #6b7280;
+      }
+      /* Footer */
+      .footer {
+        margin-top: auto;
+        padding-top: 0.7rem;
+        border-top: 1px solid #020617;
+        font-size: 0.7rem;
+        color: #6b7280;
+        display: flex;
+        justify-content: space-between;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app-shell">
+      <!-- Sidebar / Navigation -->
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="brand-badge">MS</div>
+          <div>
+            <div class="brand-text-main">Monitoring System</div>
+            <div class="brand-text-sub">Admin operations overview</div>
+          </div>
+        </div>
 
-    document.getElementById("btnSpike").addEventListener("click", () => {
-      baseState.mode = "spike";
-      addEvent(
-        "critical",
-        "Simulated traffic spike",
-        "Manual scenario trigger from UI"
+        <nav class="nav">
+          <div class="nav-item active" data-page="dashboard">
+            <span class="nav-dot"></span>
+            <div class="nav-text">
+              <span class="nav-label-main">Dashboard</span>
+              <span class="nav-label-sub">Global metrics</span>
+            </div>
+          </div>
+          <div class="nav-item" data-page="clients">
+            <span class="nav-dot" style="background:#38bdf8; box-shadow:0 0 8px rgba(56,189,248,1)"></span>
+            <div class="nav-text">
+              <span class="nav-label-main">Clients</span>
+              <span class="nav-label-sub">Registered instances</span>
+            </div>
+          </div>
+          <div class="nav-item" data-page="alerts">
+            <span class="nav-dot" style="background:#f97316; box-shadow:0 0 8px rgba(249,115,22,1)"></span>
+            <div class="nav-text">
+              <span class="nav-label-main">Alerts</span>
+              <span class="nav-label-sub">Incidents & thresholds</span>
+            </div>
+          </div>
+          <div class="nav-item" data-page="settings">
+            <span class="nav-dot" style="background:#a855f7; box-shadow:0 0 8px rgba(168,85,247,1)"></span>
+            <div class="nav-text">
+              <span class="nav-label-main">Settings</span>
+              <span class="nav-label-sub">Display & thresholds</span>
+            </div>
+          </div>
+        </nav>
+
+        <div class="sidebar-footer">
+          Frontend‑only demo. No backend requests are made; data is simulated
+          in the browser.
+        </div>
+      </aside>
+
+      <!-- Main content -->
+      <main class="main">
+        <div class="main-header">
+          <div>
+            <div class="main-title" id="page-title">
+              Dashboard
+            </div>
+            <div class="main-subtitle" id="page-subtitle">
+              Live operational overview (simulated data only)
+            </div>
+          </div>
+          <div class="main-actions">
+            <span class="pill success">
+              <span class="pill-dot" style="background:#22c55e"></span>
+              Simulated · Online
+            </span>
+            <button id="btn-simulate-spike">Simulate spike</button>
+            <button class="primary" id="btn-reset">Reset</button>
+          </div>
+        </div>
+
+        <!-- DASHBOARD PAGE -->
+        <section class="page" id="page-dashboard">
+          <div class="cards">
+            <!-- Metrics -->
+            <section class="card">
+              <div class="card-header">
+                <div>
+                  <div class="card-title">Global Status</div>
+                  <div class="card-subtitle">
+                    Aggregated health across all clients
+                  </div>
+                </div>
+                <span class="pill" id="global-pill">Last 15 minutes</span>
+              </div>
+
+              <div class="metrics-grid">
+                <div class="metric">
+                  <div class="metric-label">Active clients</div>
+                  <div class="metric-value">
+                    <span id="metric-active-clients">12</span>
+                    <span class="metric-tag">/ 24 registered</span>
+                  </div>
+                </div>
+                <div class="metric">
+                  <div class="metric-label">Health checks / min</div>
+                  <div class="metric-value" id="metric-checks">
+                    84
+                  </div>
+                </div>
+                <div class="metric">
+                  <div class="metric-label">Avg. response time</div>
+                  <div class="metric-value">
+                    <span id="metric-latency">142</span>
+                    <span class="metric-tag">ms</span>
+                  </div>
+                </div>
+                <div class="metric">
+                  <div class="metric-label">Error rate</div>
+                  <div class="metric-value">
+                    <span id="metric-errors">0.7</span>
+                    <span class="metric-tag">%</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="chip-row">
+                <span class="chip critical" id="chip-critical">
+                  2 critical alerts
+                </span>
+                <span class="chip warn" id="chip-warn">
+                  3 warnings
+                </span>
+                <span class="chip ok">
+                  Core services online
+                </span>
+              </div>
+            </section>
+
+            <!-- Timeline -->
+            <section class="card col-span-2">
+              <div class="card-header">
+                <div>
+                  <div class="card-title">
+                    Recent Health Events
+                  </div>
+                  <div class="card-subtitle">
+                    Auto‑refreshed in browser · No backend
+                  </div>
+                </div>
+                <span class="pill">Showing last 20 events</span>
+              </div>
+              <div class="timeline" id="timeline"></div>
+            </section>
+
+            <!-- Systems -->
+            <section class="card">
+              <div class="card-header">
+                <div>
+                  <div class="card-title">Systems Overview</div>
+                  <div class="card-subtitle">
+                    Synthetic status for core components
+                  </div>
+                </div>
+              </div>
+              <div class="systems" id="systems-list"></div>
+            </section>
+          </div>
+        </section>
+
+        <!-- CLIENTS PAGE -->
+        <section class="page" id="page-clients" style="display:none">
+          <section class="card">
+            <div class="card-header">
+              <div>
+                <div class="card-title">Client Registry</div>
+                <div class="card-subtitle">
+                  All instances reporting into the monitoring system
+                </div>
+              </div>
+              <span class="pill">Frontend‑simulated data</span>
+            </div>
+
+            <div class="search-row">
+              <input
+                id="client-search"
+                type="text"
+                placeholder="Search by client name, region, or ID…"
+              />
+              <button id="btn-clear-search">Clear</button>
+            </div>
+
+            <table class="table" id="clients-table">
+              <thead>
+                <tr>
+                  <th>Client</th>
+                  <th>Region</th>
+                  <th>Status</th>
+                  <th>Last check</th>
+                  <th>Avg. latency</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </section>
+        </section>
+
+        <!-- ALERTS PAGE -->
+        <section class="page" id="page-alerts" style="display:none">
+          <section class="card">
+            <div class="card-header">
+              <div>
+                <div class="card-title">Active Alerts</div>
+                <div class="card-subtitle">
+                  Open incidents & threshold breaches (simulated)
+                </div>
+              </div>
+              <span class="pill critical">
+                <span class="pill-dot" style="background:#f97373"></span>
+                Simulation mode
+              </span>
+            </div>
+
+            <div class="alert-list" id="alerts-list"></div>
+          </section>
+        </section>
+
+        <!-- SETTINGS PAGE -->
+        <section class="page" id="page-settings" style="display:none">
+          <section class="card">
+            <div class="card-header">
+              <div>
+                <div class="card-title">
+                  Display & Threshold Settings
+                </div>
+                <div class="card-subtitle">
+                  Frontend‑only controls (do not persist on reload)
+                </div>
+              </div>
+            </div>
+
+            <div class="form-grid">
+              <div class="field">
+                <label for="setting-latency-threshold">
+                  Latency warning threshold (ms)
+                </label>
+                <input
+                  type="number"
+                  id="setting-latency-threshold"
+                  value="250"
+                />
+                <small>
+                  Affects when events are marked as warning/critical in the
+                  simulated timeline.
+                </small>
+              </div>
+
+              <div class="field">
+                <label for="setting-error-threshold">
+                  Error‑rate critical threshold (%)
+                </label>
+                <input
+                  type="number"
+                  id="setting-error-threshold"
+                  value="5"
+                />
+                <small>
+                  Above this rate, new events are flagged as critical.
+                </small>
+              </div>
+
+              <div class="field">
+                <label for="setting-refresh-interval">
+                  Refresh interval (ms)
+                </label>
+                <input
+                  type="number"
+                  id="setting-refresh-interval"
+                  value="2200"
+                />
+                <small>
+                  Controls how frequently new events are generated in‑browser.
+                </small>
+              </div>
+
+              <div class="field">
+                <label for="setting-theme">
+                  Theme density
+                </label>
+                <select id="setting-theme">
+                  <option value="comfortable" selected>Comfortable</option>
+                  <option value="compact">Compact</option>
+                </select>
+                <small>
+                  This only affects spacing and does not reload the page.
+                </small>
+              </div>
+            </div>
+
+            <div class="settings-note">
+              Changes are held only in memory (JavaScript variables). If you
+              reload the page, all values reset to defaults.
+            </div>
+
+            <div style="margin-top:0.6rem; display:flex; gap:0.4rem;">
+              <button id="btn-apply-settings" class="primary">
+                Apply changes
+              </button>
+              <button id="btn-reset-settings">
+                Reset to defaults
+              </button>
+            </div>
+          </section>
+        </section>
+
+        <!-- Footer -->
+        <footer class="footer">
+          <span>
+            Monitoring System · Frontend‑only demo · No external branding or
+            third‑party analytics.
+          </span>
+          <span id="footer-status">
+            Simulation mode: normal
+          </span>
+        </footer>
+      </main>
+    </div>
+
+    <script>
+      // --------- Simulated data ---------
+      const state = {
+        mode: "normal",
+        metrics: {
+          activeClients: 12,
+          totalClients: 24,
+          checksPerMin: 84,
+          avgLatency: 142,
+          errorRate: 0.7,
+          criticalCount: 2,
+          warnCount: 3,
+        },
+        settings: {
+          latencyThreshold: 250,
+          errorThreshold: 5,
+          refreshInterval: 2200,
+        },
+      };
+
+      const systems = [
+        {
+          name: "API Gateway",
+          note: "Healthy",
+          status: "ok",
+        },
+        {
+          name: "Authentication",
+          note: "Normal",
+          status: "ok",
+        },
+        {
+          name: "Notification Engine",
+          note: "Queue delay",
+          status: "warn",
+        },
+        {
+          name: "Reporting",
+          note: "Nightly batch",
+          status: "ok",
+        },
+        {
+          name: "Database Cluster",
+          note: "Replicas in sync",
+          status: "ok",
+        },
+        {
+          name: "External Webhooks",
+          note: "Third‑party latency",
+          status: "warn",
+        },
+      ];
+
+      const clients = [
+        {
+          id: "cli-ny-001",
+          name: "New York Ops Center",
+          region: "US‑East",
+          status: "online",
+          lastCheck: "25s ago",
+          latency: 132,
+        },
+        {
+          id: "cli-ny-002",
+          name: "Manhattan Dispatch",
+          region: "US‑East",
+          status: "online",
+          lastCheck: "41s ago",
+          latency: 148,
+        },
+        {
+          id: "cli-eu-001",
+          name: "Frankfurt Ops Node",
+          region: "EU‑Central",
+          status: "degraded",
+          lastCheck: "1m 10s ago",
+          latency: 284,
+        },
+        {
+          id: "cli-ap-001",
+          name: "Singapore Edge",
+          region: "AP‑Southeast",
+          status: "online",
+          lastCheck: "16s ago",
+          latency: 178,
+        },
+        {
+          id: "cli-lab-001",
+          name: "Lab / Staging",
+          region: "Internal",
+          status: "offline",
+          lastCheck: "23m ago",
+          latency: null,
+        },
+      ];
+
+      const alerts = [
+        {
+          id: "al-001",
+          severity: "critical",
+          title: "API latency spike in EU‑Central",
+          detail:
+            "Median latency exceeded 400ms for Frankfurt Ops Node within the last 5 minutes.",
+          source: "Frankfurt Ops Node",
+          since: "7 min",
+        },
+        {
+          id: "al-002",
+          severity: "warn",
+          title: "Notification queue delay",
+          detail:
+            "Delivery queue backlog exceeds 1,500 messages. Throughput temporarily reduced.",
+          source: "Notification Engine",
+          since: "18 min",
+        },
+        {
+          id: "al-003",
+          severity: "warn",
+          title: "Flaky 3rd‑party webhook",
+          detail:
+            "External callback endpoint for partner integration timed out in 3/20 attempts.",
+          source: "External Webhooks",
+          since: "32 min",
+        },
+      ];
+
+      // --------- DOM references ---------
+      const navItems = document.querySelectorAll(".nav-item");
+      const pages = {
+        dashboard: document.getElementById("page-dashboard"),
+        clients: document.getElementById("page-clients"),
+        alerts: document.getElementById("page-alerts"),
+        settings: document.getElementById("page-settings"),
+      };
+      const pageTitle = document.getElementById("page-title");
+      const pageSubtitle = document.getElementById("page-subtitle");
+      const footerStatus = document.getElementById("footer-status");
+
+      const metricActiveClients = document.getElementById(
+        "metric-active-clients",
       );
-    });
+      const metricChecks = document.getElementById("metric-checks");
+      const metricLatency = document.getElementById("metric-latency");
+      const metricErrors = document.getElementById("metric-errors");
+      const chipCritical = document.getElementById("chip-critical");
+      const chipWarn = document.getElementById("chip-warn");
+      const systemsList = document.getElementById("systems-list");
+      const timeline = document.getElementById("timeline");
+      const globalPill = document.getElementById("global-pill");
 
-    document.getElementById("btnReset").addEventListener("click", () => {
-      baseState = { checksPerMin: 80, avgLatency: 140, errorRate: 0.8, mode: "normal" };
-      eventsEl.innerHTML = "";
-      addEvent("ok", "System reset to normal", "Baseline metrics restored");
-      renderMetrics();
-    });
+      const clientsTableBody =
+        document.querySelector("#clients-table tbody");
+      const clientSearch = document.getElementById("client-search");
+      const btnClearSearch = document.getElementById("btn-clear-search");
 
-    // Initial render
-    renderSystems();
-    renderMetrics();
-    addEvent("ok", "Monitoring demo loaded", "Frontend-only simulation started");
+      const alertsList = document.getElementById("alerts-list");
 
-    // Periodic updates
-    setInterval(randomTick, 2000);
-  </script>
-</body>
+      const btnSpike = document.getElementById("btn-simulate-spike");
+      const btnReset = document.getElementById("btn-reset");
+
+      const latencyInput = document.getElementById(
+        "setting-latency-threshold",
+      );
+      const errorInput = document.getElementById(
+        "setting-error-threshold",
+      );
+      const refreshInput = document.getElementById(
+        "setting-refresh-interval",
+      );
+      const themeSelect = document.getElementById("setting-theme");
+      const btnApplySettings = document.getElementById(
+        "btn-apply-settings",
+      );
+      const btnResetSettings = document.getElementById(
+        "btn-reset-settings",
+      );
+
+      // --------- Page navigation ---------
+      function setPage(page) {
+        Object.keys(pages).forEach((key) => {
+          pages[key].style.display = key === page ? "block" : "none";
+        });
+        navItems.forEach((item) => {
+          item.classList.toggle(
+            "active",
+            item.getAttribute("data-page") === page,
+          );
+        });
+
+        if (page === "dashboard") {
+          pageTitle.textContent = "Dashboard";
+          pageSubtitle.textContent =
+            "Live operational overview (simulated data only)";
+        } else if (page === "clients") {
+          pageTitle.textContent = "Clients";
+          pageSubtitle.textContent =
+            "All registered client instances (frontend‑only data)";
+        } else if (page === "alerts") {
+          pageTitle.textContent = "Alerts";
+          pageSubtitle.textContent =
+            "Active incidents & threshold breaches (no backend)";
+        } else if (page === "settings") {
+          pageTitle.textContent = "Settings";
+          pageSubtitle.textContent =
+            "Display options and thresholds (do not persist after reload)";
+        }
+      }
+
+      navItems.forEach((item) => {
+        item.addEventListener("click", () => {
+          const page = item.getAttribute("data-page");
+          setPage(page);
+        });
+      });
+
+      // --------- Render systems ---------
+      function renderSystems() {
+        systemsList.innerHTML = "";
+        systems.forEach((sys) => {
+          const row = document.createElement("div");
+          row.className = "system-row";
+          row.innerHTML = `
+            <div>
+              <span class="system-name">${sys.name}</span>
+              <span class="system-note">${sys.note}</span>
+            </div>
+            <div class="system-status">
+              <span class="dot ${sys.status}"></span>
+              <span>${sys.status.toUpperCase()}</span>
+            </div>
+          `;
+          systemsList.appendChild(row);
+        });
+      }
+
+      // --------- Render metrics ---------
+      function renderMetrics() {
+        metricActiveClients.textContent = state.metrics.activeClients;
+        metricChecks.textContent = Math.round(state.metrics.checksPerMin);
+        metricLatency.textContent = Math.round(state.metrics.avgLatency);
+        metricErrors.textContent = state.metrics.errorRate.toFixed(1);
+
+        chipCritical.textContent = `${
+          state.metrics.criticalCount
+        } critical alert${state.metrics.criticalCount === 1 ? "" : "s"}`;
+        chipWarn.textContent = `${
+          state.metrics.warnCount
+        } warning${state.metrics.warnCount === 1 ? "" : "s"}`;
+
+        globalPill.textContent =
+          state.mode === "spike"
+            ? "Simulated traffic spike"
+            : "Last 15 minutes";
+        footerStatus.textContent =
+          "Simulation mode: " + state.mode;
+      }
+
+      // --------- Timeline events ---------
+      function addEvent(kind, title, detail) {
+        const event = document.createElement("div");
+        event.className = "event";
+        const markerClass =
+          kind === "critical"
+            ? "critical"
+            : kind === "warn"
+            ? "warn"
+            : "ok";
+        const badgeClass = markerClass;
+        const now = new Date();
+        const time = now.toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+        });
+
+        event.innerHTML = `
+          <div class="event-marker ${markerClass}"></div>
+          <div class="event-main">
+            <div class="event-title">${title}</div>
+            <div class="event-detail">${detail}</div>
+            <div class="event-meta">
+              <span>${time}</span>
+              <span>Generated locally · No API</span>
+            </div>
+          </div>
+          <div>
+            <span class="badge ${badgeClass}">${kind.toUpperCase()}</span>
+          </div>
+        `;
+        timeline.prepend(event);
+        while (timeline.children.length > 20) {
+          timeline.removeChild(timeline.lastChild);
+        }
+      }
+
+      // --------- Simulation tick ---------
+      let tickIntervalId = null;
+
+      function randomTick() {
+        const d = state.mode === "spike" ? 10 : 3;
+
+        state.metrics.checksPerMin += (Math.random() - 0.5) * d;
+        state.metrics.avgLatency +=
+          (Math.random() - 0.5) * (state.mode === "spike" ? 40 : 10);
+        state.metrics.errorRate +=
+          (Math.random() - 0.5) * (state.mode === "spike" ? 0.8 : 0.2);
+
+        state.metrics.checksPerMin = Math.max(
+          20,
+          Math.min(250, state.metrics.checksPerMin),
+        );
+        state.metrics.avgLatency = Math.max(
+          40,
+          Math.min(900, state.metrics.avgLatency),
+        );
+        state.metrics.errorRate = Math.max(
+          0,
+          Math.min(15, state.metrics.errorRate),
+        );
+
+        // Adjust counts
+        if (state.mode === "spike") {
+          state.metrics.criticalCount = 3;
+          state.metrics.warnCount = 4;
+        } else {
+          state.metrics.criticalCount = 1 + (Math.random() < 0.3 ? 1 : 0);
+          state.metrics.warnCount = 2 + (Math.random() < 0.4 ? 1 : 0);
+        }
+
+        const r = Math.random();
+        let kind = "ok";
+        let title = "Health check OK";
+        let detail =
+          "All monitored endpoints responded within threshold.";
+
+        const latency = state.metrics.avgLatency;
+        const err = state.metrics.errorRate;
+
+        if (
+          latency > state.settings.latencyThreshold ||
+          err > state.settings.errorThreshold
+        ) {
+          if (latency > state.settings.latencyThreshold * 1.3 || err > state.settings.errorThreshold * 1.5) {
+            kind = "critical";
+            title = "Response time SLO breach";
+            detail =
+              "Latency and/or error rate are above critical thresholds.";
+          } else {
+            kind = "warn";
+            title = "Elevated response time";
+            detail =
+              "Latency is moving above the configured warning threshold.";
+          }
+        } else if (r < (state.mode === "spike" ? 0.5 : 0.3)) {
+          kind = "warn";
+          title = "Minor jitter";
+          detail =
+            "Minor variation in latency observed; still within safe bounds.";
+        }
+
+        if (Math.random() < (state.mode === "spike" ? 0.8 : 0.4)) {
+          addEvent(kind, title, detail);
+        }
+
+        renderMetrics();
+      }
+
+      function startTicking() {
+        if (tickIntervalId) {
+          clearInterval(tickIntervalId);
+        }
+        tickIntervalId = setInterval(
+          randomTick,
+          state.settings.refreshInterval,
+        );
+      }
+
+      // --------- Clients rendering & search ---------
+      function renderClients(filter = "") {
+        clientsTableBody.innerHTML = "";
+        const query = filter.trim().toLowerCase();
+        const filtered = clients.filter((c) => {
+          if (!query) return true;
+          return (
+            c.name.toLowerCase().includes(query) ||
+            c.region.toLowerCase().includes(query) ||
+            c.id.toLowerCase().includes(query)
+          );
+        });
+
+        filtered.forEach((c) => {
+          const tr = document.createElement("tr");
+          const statusClass =
+            c.status === "online"
+              ? "online"
+              : c.status === "offline"
+              ? "offline"
+              : "degraded";
+          const latencyText =
+            c.latency != null ? `${c.latency} ms` : "—";
+          tr.innerHTML = `
+            <td>
+              <div>${c.name}</div>
+              <div class="muted">${c.id}</div>
+            </td>
+            <td>${c.region}</td>
+            <td>
+              <span class="label ${statusClass}">
+                ${c.status.toUpperCase()}
+              </span>
+            </td>
+            <td>${c.lastCheck}</td>
+            <td>${latencyText}</td>
+          `;
+          clientsTableBody.appendChild(tr);
+        });
+      }
+
+      clientSearch.addEventListener("input", () => {
+        renderClients(clientSearch.value);
+      });
+      btnClearSearch.addEventListener("click", () => {
+        clientSearch.value = "";
+        renderClients();
+      });
+
+      // --------- Alerts rendering ---------
+      function renderAlerts() {
+        alertsList.innerHTML = "";
+        alerts.forEach((a) => {
+          const item = document.createElement("div");
+          const badgeClass =
+            a.severity === "critical"
+              ? "critical"
+              : a.severity === "warn"
+              ? "warn"
+              : "ok";
+          item.className = "alert-item";
+          item.innerHTML = `
+            <div class="alert-head">
+              <span>${a.title}</span>
+              <span class="badge ${badgeClass}">${a.severity.toUpperCase()}</span>
+            </div>
+            <div class="alert-detail">${a.detail}</div>
+            <div class="alert-meta">
+              <span>Source: ${a.source}</span>
+              <span>Open for ${a.since}</span>
+            </div>
+          `;
+          alertsList.appendChild(item);
+        });
+      }
+
+      // --------- Buttons: spike & reset ---------
+      btnSpike.addEventListener("click", () => {
+        state.mode = "spike";
+        addEvent(
+          "critical",
+          "Simulated traffic spike",
+          "Manual scenario trigger from UI; no real backend involved.",
+        );
+        renderMetrics();
+      });
+
+      btnReset.addEventListener("click", () => {
+        state.mode = "normal";
+        state.metrics.checksPerMin = 84;
+        state.metrics.avgLatency = 142;
+        state.metrics.errorRate = 0.7;
+        state.metrics.criticalCount = 2;
+        state.metrics.warnCount = 3;
+        timeline.innerHTML = "";
+        addEvent(
+          "ok",
+          "System reset to baseline",
+          "Metrics and alerts returned to default simulated values.",
+        );
+        renderMetrics();
+      });
+
+      // --------- Settings handling ---------
+      function applySettingsFromInputs() {
+        state.settings.latencyThreshold =
+          Number(latencyInput.value) || 250;
+        state.settings.errorThreshold = Number(errorInput.value) || 5;
+        state.settings.refreshInterval =
+          Number(refreshInput.value) || 2200;
+
+        // density toggle
+        if (themeSelect.value === "compact") {
+          document.body.style.setProperty("--card-padding", "0.65rem");
+        } else {
+          document.body.style.removeProperty("--card-padding");
+        }
+
+        startTicking();
+      }
+
+      function resetSettingsInputs() {
+        latencyInput.value = 250;
+        errorInput.value = 5;
+        refreshInput.value = 2200;
+        themeSelect.value = "comfortable";
+      }
+
+      btnApplySettings.addEventListener("click", applySettingsFromInputs);
+      btnResetSettings.addEventListener("click", () => {
+        resetSettingsInputs();
+        applySettingsFromInputs();
+      });
+
+      // --------- Initial bootstrap ---------
+      function init() {
+        renderSystems();
+        renderMetrics();
+        renderClients();
+        renderAlerts();
+        addEvent(
+          "ok",
+          "Monitoring dashboard loaded",
+          "All data is generated client‑side; no backend or external services.",
+        );
+        startTicking();
+      }
+
+      init();
+    </script>
+  </body>
 </html>
