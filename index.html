@@ -1852,24 +1852,24 @@
       }
 
 function tryLogin() {
-  const email = loginEmail.value.trim().toLowerCase(); // Forces email to lowercase
+  const email = loginEmail.value.trim().toLowerCase();
   const pass = loginPassword.value.trim();
 
-  // ERROR POINT: 
-  // If you check for "superadmin@resq.com" but type "SuperAdmin@resq.com", it works because of .toLowerCase()
-  // BUT if you check for "ResQAdmin123" and type "resqadmin123", it FAILS because passwords are case-sensitive.
-  
   if (email === "superadmin@resq.com" && pass === "ResQAdmin123") {
-      loginError.style.display = "none";
-      loginView.style.display = "none";
-      appView.style.display = "grid"; 
-      // Note: Ensure appView is set to "grid" or "block" to match your CSS layout
-      bootstrap(); 
+    // 1. Hide the error and login screen
+    loginError.style.display = "none";
+    loginView.style.display = "none";
+    
+    // 2. Show the app view using "grid" to maintain the layout 
+    appView.style.display = "grid"; 
+    
+    // 3. CRITICAL: Initialize all dashboard data 
+    bootstrap(); 
+    
+    console.log("Login successful: Dashboard initialized.");
   } else {
-      loginError.style.display = "block";
-      // Added a shake effect for better UX
-      loginCard.classList.add('shake');
-      setTimeout(() => loginCard.classList.remove('shake'), 500);
+    loginError.style.display = "block";
+    // Optional: Add a shake effect here for better feedback
   }
 }
 
