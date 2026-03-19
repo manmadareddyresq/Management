@@ -1851,15 +1851,27 @@
         }
       }
 
-      loginBtn.addEventListener("click", tryLogin);
-      loginPassword.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") tryLogin();
-      });
-      logoutBtn.addEventListener("click", () => {
-        appView.style.display = "none";
-        loginView.style.display = "flex";
-        loginPassword.value = "";
-      });
+function tryLogin() {
+  const email = loginEmail.value.trim().toLowerCase(); // Forces email to lowercase
+  const pass = loginPassword.value.trim();
+
+  // ERROR POINT: 
+  // If you check for "superadmin@resq.com" but type "SuperAdmin@resq.com", it works because of .toLowerCase()
+  // BUT if you check for "ResQAdmin123" and type "resqadmin123", it FAILS because passwords are case-sensitive.
+  
+  if (email === "superadmin@resq.com" && pass === "ResQAdmin123") {
+      loginError.style.display = "none";
+      loginView.style.display = "none";
+      appView.style.display = "grid"; 
+      // Note: Ensure appView is set to "grid" or "block" to match your CSS layout
+      bootstrap(); 
+  } else {
+      loginError.style.display = "block";
+      // Added a shake effect for better UX
+      loginCard.classList.add('shake');
+      setTimeout(() => loginCard.classList.remove('shake'), 500);
+  }
+}
 
       // ---------------------- NAVIGATION ----------------------
       const navItems = document.querySelectorAll(".nav-item");
