@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Monitoring System</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    body { background: #0b1120; color: #e5e7eb; min-height: 100vh; display: flex; flex-direction: column; }
+    .app { display: grid; grid-template-rows: auto 1fr; min-height: 100vh; }
+    header { padding: 1rem 1.5rem; border-bottom: 1px solid #1f2937; display: flex; align-items: center; justify-content: space-between; background: radial-gradient(circle at top left, #1f2937, #020617); }
+    .logo { display: flex; align-items: center; gap: 0.6rem; }
+    .logo-badge { width: 32px; height: 32px; border-radius: 999px; background: linear-gradient(135deg, #22c55e, #22d3ee); display: flex; align-items: center; justify-content: center; font-weight: 700; color: #020617; font-size: 0.9rem; box-shadow: 0 0 15px rgba(34,197,94,0.6); }
+    .logo-text-title { font-weight: 600; letter-spacing: 0.04em; font-size: 1rem; }
+    .logo-text-sub { font-size: 0.7rem; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.12em; }
+    .status-pill { padding: 0.25rem 0.8rem; border-radius: 999px; background: rgba(22,163,74,0.15); border: 1px solid rgba(34,197,94,0.4); font-size: 0.75rem; display: inline-flex; align-items: center; gap: 0.35rem; color: #bbf7d0; }
+    .status-dot { width: 8px; height: 8px; border-radius: 999px; background: #22c55e; box-shadow: 0 0 8px rgba(34,197,94,0.9); }
+    main { display: grid; grid-template-columns: 2fr 3fr 2fr; gap: 1.5rem; padding: 1.5rem; align-items: flex-start; }
+    @media (max-width: 1100px) {
+      main { grid-template-columns: 1fr 1fr; grid-auto-rows: minmax(0, auto); }
+      .col-wide { grid-column: 1 / -1; }
+    }
+    @media (max-width: 768px) {
+      main { grid-template-columns: 1fr; }
+    }
+    .card { background: rgba(15,23,42,0.9); border-radius: 0.9rem; border: 1px solid rgba(31,41,55,0.9); padding: 1rem 1.1rem; box-shadow: 0 20px 45px rgba(0,0,0,0.45); backdrop-filter: blur(14px); }
+    .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.7rem; }
+    .card-title { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.12em; color: #9ca3af; }
+    .pill { font-size: 0.65rem; padding: 0.2rem 0.6rem; border-radius: 999px; border: 1px solid #1f2937; color: #9ca3af; }
+    .metrics-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 0.75rem; margin-top: 0.5rem; }
+    .metric { padding: 0.5rem 0.6rem; border-radius: 0.7rem; background: linear-gradient(135deg, rgba(15,23,42,0.95), rgba(15,23,42,0.4)); border: 1px solid rgba(31,41,55,0.9); }
+    .metric-label { font-size: 0.75rem; color: #9ca3af; margin-bottom: 0.1rem; }
+    .metric-value { font-size: 1.1rem; font-weight: 600; }
+    .metric-tag { font-size: 0.65rem; color: #6b7280; margin-left: 0.25rem; }
+    .chip-row { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.6rem; }
+    .chip { font-size: 0.65rem; padding: 0.18rem 0.5rem; border-radius: 999px; border: 1px solid #1f2937; color: #9ca3af; background: rgba(15,23,42,0.85); }
+    .chip.critical { border-color: rgba(248,113,113,0.4); color: #fecaca; background: rgba(127,29,29,0.3); }
+    .chip.warn { border-color: rgba(251,191,36,0.4); color: #fef3c7; background: rgba(120,53,15,0.35); }
+    .chip.ok { border-color: rgba(34,197,94,0.45); color: #bbf7d0; background: rgba(22,101,52,0.4); }
+    .timeline { margin-top: 0.4rem; max-height: 260px; overflow-y: auto; padding-right: 0.3rem; }
+    .event { display: flex; gap: 0.55rem; padding: 0.45rem 0.2rem; border-radius: 0.6rem; transition: background 0.15s ease; align-items: flex-start; }
+    .event:hover { background: rgba(15,23,42,0.9); }
+    .event-marker { width: 8px; height: 8px; border-radius: 999px; margin-top: 0.3rem; }
+    .event-marker.critical { background: #f97373; box-shadow: 0 0 8px rgba(248,113,113,0.9); }
+    .event-marker.warn { background: #fbbf24; box-shadow: 0 0 8px rgba(251,191,36,0.9); }
+    .event-marker.ok { background: #22c55e; box-shadow: 0 0 8px rgba(34,197,94,0.9); }
+    .event-main { flex: 1; }
+    .event-title { font-size: 0.8rem; font-weight: 500; margin-bottom: 0.1rem; }
+    .event-meta { font-size: 0.7rem; color: #6b7280; display: flex; justify-content: space-between; gap: 0.4rem; }
+    .badge { padding: 0.12rem 0.45rem; border-radius: 999px; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.08em; }
+    .badge.critical { background: rgba(127,29,29,0.8); color: #fecaca; }
+    .badge.warn { background: rgba(120,53,15,0.9); color: #fed7aa; }
+    .badge.ok { background: rgba(22,101,52,0.9); color: #bbf7d0; }
+    .systems { margin-top: 0.4rem; }
+    .system-row { display: flex; align-items: center; justify-content: space-between; padding: 0.4rem 0.2rem; border-bottom: 1px dashed rgba(31,41,55,0.7); font-size: 0.78rem; }
+    .system-row:last-child { border-bottom: none; }
+    .system-name { color: #e5e7eb; }
+    .system-status { display: flex; align-items: center; gap: 0.25rem; }
+    .dot { width: 7px; height: 7px; border-radius: 999px; }
+    .dot.ok { background: #22c55e; }
+    .dot.warn { background: #fbbf24; }
+    .dot.critical { background: #f97373; }
+    .system-note { color: #6b7280; font-size: 0.7rem; margin-left: 0.4rem; }
+    .footer { padding: 0.7rem 1.5rem 1rem; border-top: 1px solid #111827; font-size: 0.7rem; color: #6b7280; display: flex; justify-content: space-between; align-items: center; background: #020617; }
+    .controls { display: flex; gap: 0.4rem; }
+    button { border-radius: 999px; border: 1px solid #1f2937; padding: 0.25rem 0.7rem; font-size: 0.7rem; background: #020617; color: #e5e7eb; cursor: pointer; }
+    button.primary { background: #22c55e; border-color: #16a34a; color: #022c22; font-weight: 500; }
+    button:hover { opacity: 0.9; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div class="logo">
+        <div class="logo-badge">MS</div>
+        <div>
+          <div class="logo-text-title">Monitoring System</div>
+          <div class="logo-text-sub">Operational overview · Demo only</div>
+        </div>
+      </div>
+      <div class="status-pill">
+        <span class="status-dot"></span>
+        Live simulation · No backend
+      </div>
+    </header>
+
+    <main>
+      <!-- Left: High-level metrics -->
+      <section class="card">
+        <div class="card-header">
+          <div class="card-title">Global Status</div>
+          <span class="pill">Last 15 min</span>
+        </div>
+        <div class="metrics-grid">
+          <div class="metric">
+            <div class="metric-label">Active Clients</div>
+            <div class="metric-value">12<span class="metric-tag">/ 24 registered</span></div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">Checks / min</div>
+            <div class="metric-value" id="checksPerMin">84</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">Avg. Response Time</div>
+            <div class="metric-value" id="avgLatency">142<span class="metric-tag">ms</span></div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">Error Rate</div>
+            <div class="metric-value" id="errorRate">0.7<span class="metric-tag">%</span></div>
+          </div>
+        </div>
+        <div class="chip-row">
+          <span class="chip critical">2 critical alerts</span>
+          <span class="chip warn">3 warnings</span>
+          <span class="chip ok">All core services online</span>
+        </div>
+      </section>
+
+      <!-- Middle: Live “events” timeline (simulated) -->
+      <section class="card col-wide">
+        <div class="card-header">
+          <div class="card-title">Recent Health Events (Simulated)</div>
+          <span class="pill">Auto-refresh · In browser only</span>
+        </div>
+        <div class="timeline" id="events"></div>
+      </section>
+
+      <!-- Right: Systems view -->
+      <section class="card">
+        <div class="card-header">
+          <div class="card-title">Systems Overview</div>
+          <span class="pill">Static configuration</span>
+        </div>
+        <div class="systems" id="systems">
+          <!-- Populated by JS -->
+        </div>
+      </section>
+    </main>
+
+    <div class="footer">
+      <span>This page is a pure frontend demo. No backend calls are made.</span>
+      <div class="controls">
+        <button id="btnSpike">Simulate spike</button>
+        <button class="primary" id="btnReset">Reset to normal</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Simple in-browser simulation of monitoring data
+
+    const eventsEl = document.getElementById("events");
+    const checksPerMinEl = document.getElementById("checksPerMin");
+    const avgLatencyEl = document.getElementById("avgLatency");
+    const errorRateEl = document.getElementById("errorRate");
+    const systemsEl = document.getElementById("systems");
+
+    let baseState = {
+      checksPerMin: 80,
+      avgLatency: 140,
+      errorRate: 0.8,
+      mode: "normal"
+    };
+
+    const systems = [
+      { name: "API Gateway", status: "ok", note: "Healthy" },
+      { name: "Auth Service", status: "ok", note: "Normal" },
+      { name: "Notification Engine", status: "warn", note: "Queue delay" },
+      { name: "Reporting", status: "ok", note: "Scheduled" },
+      { name: "Database Cluster", status: "ok", note: "Replicas in sync" },
+      { name: "External Webhooks", status: "warn", note: "3rd party latency" }
+    ];
+
+    function renderSystems() {
+      systemsEl.innerHTML = "";
+      systems.forEach(s => {
+        const row = document.createElement("div");
+        row.className = "system-row";
+        row.innerHTML = `
+          <div>
+            <span class="system-name">${s.name}</span>
+            <span class="system-note">${s.note}</span>
+          </div>
+          <div class="system-status">
+            <span class="dot ${s.status}"></span>
+            <span>${s.status.toUpperCase()}</span>
+          </div>
+        `;
+        systemsEl.appendChild(row);
+      });
+    }
+
+    function addEvent(kind, title, detail) {
+      const event = document.createElement("div");
+      event.className = "event";
+      const markerClass = kind === "critical" ? "critical" : kind === "warn" ? "warn" : "ok";
+      const badgeClass = markerClass;
+      const now = new Date();
+      const time = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+
+      event.innerHTML = `
+        <div class="event-marker ${markerClass}"></div>
+        <div class="event-main">
+          <div class="event-title">${title}</div>
+          <div class="event-meta">
+            <span>${detail}</span>
+            <span>${time}</span>
+          </div>
+        </div>
+        <div>
+          <span class="badge ${badgeClass}">${kind.toUpperCase()}</span>
+        </div>
+      `;
+      eventsEl.prepend(event);
+      // Keep last ~20
+      while (eventsEl.children.length > 20) {
+        eventsEl.removeChild(eventsEl.lastChild);
+      }
+    }
+
+    function renderMetrics() {
+      checksPerMinEl.textContent = Math.round(baseState.checksPerMin);
+      avgLatencyEl.textContent = Math.round(baseState.avgLatency) + "";
+      errorRateEl.textContent = baseState.errorRate.toFixed(1);
+    }
+
+    function randomTick() {
+      const drift = baseState.mode === "spike" ? 10 : 3;
+      baseState.checksPerMin += (Math.random() - 0.5) * drift;
+      baseState.avgLatency += (Math.random() - 0.5) * (baseState.mode === "spike" ? 40 : 10);
+      baseState.errorRate += (Math.random() - 0.5) * (baseState.mode === "spike" ? 0.8 : 0.2);
+
+      baseState.checksPerMin = Math.max(20, Math.min(250, baseState.checksPerMin));
+      baseState.avgLatency = Math.max(40, Math.min(800, baseState.avgLatency));
+      baseState.errorRate = Math.max(0, Math.min(15, baseState.errorRate));
+
+      if (Math.random() < (baseState.mode === "spike" ? 0.6 : 0.3)) {
+        const r = Math.random();
+        if (r < 0.2) {
+          addEvent(
+            "critical",
+            "Client timeout escalation",
+            "Multiple checks exceeded latency SLO"
+          );
+        } else if (r < 0.6) {
+          addEvent(
+            "warn",
+            "Elevated response time",
+            "Latency moving above baseline for some clients"
+          );
+        } else {
+          addEvent(
+            "ok",
+            "Health check OK",
+            "All monitored endpoints responded within threshold"
+          );
+        }
+      }
+      renderMetrics();
+    }
+
+    document.getElementById("btnSpike").addEventListener("click", () => {
+      baseState.mode = "spike";
+      addEvent(
+        "critical",
+        "Simulated traffic spike",
+        "Manual scenario trigger from UI"
+      );
+    });
+
+    document.getElementById("btnReset").addEventListener("click", () => {
+      baseState = { checksPerMin: 80, avgLatency: 140, errorRate: 0.8, mode: "normal" };
+      eventsEl.innerHTML = "";
+      addEvent("ok", "System reset to normal", "Baseline metrics restored");
+      renderMetrics();
+    });
+
+    // Initial render
+    renderSystems();
+    renderMetrics();
+    addEvent("ok", "Monitoring demo loaded", "Frontend-only simulation started");
+
+    // Periodic updates
+    setInterval(randomTick, 2000);
+  </script>
+</body>
+</html>
