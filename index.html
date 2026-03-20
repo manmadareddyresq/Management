@@ -82,10 +82,9 @@
             opacity: 0; transform: scale(1.1) blur(20px); transition: 1.2s cubic-bezier(0.1, 0.9, 0.2, 1);
         }
 
-        /* Sidebar Responsive Logic */
         #side-nav {
             background: var(--sidebar); border-right: 1px solid var(--border); display: flex; flex-direction: column;
-            padding: 30px 15px; transition: var(--trans); z-index: 100;
+            padding: 30px 15px; transition: var(--trans); z-index: 2000;
         }
 
         .side-logo { font-size: 2.2rem; font-weight: 800; color: var(--primary); letter-spacing: 4px; padding: 0 20px 40px; }
@@ -98,7 +97,6 @@
         .nav-item:hover { background: rgba(255,255,255,0.03); color: white; transform: translateX(5px); }
         .nav-item.active { background: var(--primary); color: white; box-shadow: 0 10px 20px rgba(229, 57, 53, 0.3); border-color: rgba(255,255,255,0.1); }
 
-        /* Content Area */
         header {
             height: 90px; background: rgba(2, 4, 8, 0.8); backdrop-filter: blur(20px);
             border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between;
@@ -116,7 +114,6 @@
         .admin-profile { display: flex; align-items: center; gap: 20px; text-align: right; }
         .live-time { font-family: 'JetBrains Mono'; color: var(--accent); font-weight: bold; font-size: 1.2rem; }
 
-        /* Viewport */
         .main-view { padding: 40px; overflow-y: auto; height: calc(100vh - 90px); scroll-behavior: smooth; }
 
         /* GRID COMPONENTS */
@@ -136,16 +133,33 @@
         td { padding: 20px; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
         tr:hover td { background: rgba(255,255,255,0.01); }
 
-        /* --- MOBILE RESPONSIVENESS --- */
+        /* --- MOBILE OPTIMIZATION --- */
         @media (max-width: 1024px) {
             #app-shell { grid-template-columns: 1fr; }
-            #side-nav { position: fixed; left: -280px; top: 0; bottom: 0; width: 280px; box-shadow: 30px 0 60px rgba(0,0,0,0.8); }
+            #side-nav { 
+                position: fixed; left: -100%; top: 0; bottom: 0; width: 85%; max-width: 300px;
+                box-shadow: 30px 0 60px rgba(0,0,0,0.8);
+            }
             #side-nav.active { left: 0; }
+            
+            body.menu-open::after {
+                content: ''; position: fixed; inset: 0; background: rgba(0,0,0,0.6); 
+                backdrop-filter: blur(4px); z-index: 1500;
+            }
+
+            header { padding: 0 20px; height: 70px; }
             .search-box { display: none; }
-            .main-view { padding: 20px; }
+            .main-view { padding: 20px; height: calc(100vh - 70px); }
+            .stat-row { grid-template-columns: 1fr 1fr; gap: 12px; }
+            .stat-card { padding: 15px; }
+            .stat-card .val { font-size: 1.8rem; }
+            .admin-profile > div:last-child { display: none; }
         }
 
-        .menu-toggle { display: none; font-size: 1.8rem; cursor: pointer; color: white; margin-right: 20px; }
+        .menu-toggle { 
+            display: none; font-size: 1.8rem; cursor: pointer; color: white; 
+            padding: 8px; background: rgba(255,255,255,0.05); border-radius: 12px;
+        }
         @media (max-width: 1024px) { .menu-toggle { display: block; } }
 
         /* --- MODULE SPECIFICS --- */
@@ -159,7 +173,8 @@
         .bar { flex: 1; background: linear-gradient(to top, var(--primary), var(--accent)); border-radius: 8px 8px 0 0; transition: 1.5s cubic-bezier(0.1, 0.9, 0.2, 1); }
 
         /* NOTIFICATIONS */
-        #toast-wrap { position: fixed; top: 110px; right: 30px; width: 340px; z-index: 1000; pointer-events: none; }
+        #toast-wrap { position: fixed; top: 110px; right: 30px; width: 340px; z-index: 3000; pointer-events: none; }
+        @media (max-width: 600px) { #toast-wrap { width: 90%; right: 5%; top: 80px; } }
         .toast {
             background: rgba(10, 15, 25, 0.95); backdrop-filter: blur(10px); padding: 20px; border-radius: 15px; margin-bottom: 12px;
             border-left: 4px solid var(--primary); animation: slideIn 0.5s cubic-bezier(0.1, 0.9, 0.2, 1) forwards; pointer-events: auto;
@@ -167,7 +182,6 @@
         }
         @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 
-        /* PILLS */
         .pill { padding: 6px 14px; border-radius: 20px; font-size: 0.7rem; font-weight: bold; text-transform: uppercase; }
         .p-online { background: rgba(0, 230, 118, 0.1); color: var(--success); border: 1px solid var(--success); }
         .p-offline { background: rgba(255, 23, 68, 0.1); color: var(--danger); border: 1px solid var(--danger); }
@@ -176,6 +190,7 @@
         .action-btn { background: transparent; border: 1px solid var(--border); color: var(--text); padding: 8px 16px; border-radius: 10px; cursor: pointer; transition: 0.3s; font-size: 0.8rem; }
         .action-btn:hover { background: var(--primary); border-color: var(--primary); color: white; }
 
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-10px); } 75% { transform: translateX(10px); } }
     </style>
 </head>
 <body>
@@ -239,7 +254,7 @@
         <main>
             <header>
                 <div class="flex-c">
-                    <div class="menu-toggle" onclick="document.getElementById('side-nav').classList.toggle('active')">☰</div>
+                    <div class="menu-toggle" onclick="toggleMenu()">☰</div>
                     <div class="search-box">
                         <input type="text" id="master-search" placeholder="Search operational database..." onkeyup="doSearch()">
                     </div>
@@ -253,12 +268,11 @@
                 </div>
             </header>
 
-            <div style="padding: 20px 40px 0; font-size: 0.75rem; color: var(--accent); letter-spacing: 2px;">
+            <div style="padding: 20px 40px 0; font-size: 0.75rem; color: var(--accent); letter-spacing: 2px;" id="node-indicator">
                 NODE: <span id="node-name">OPERATIONAL HUB</span> | <span style="color:var(--success)">REAL-TIME SYNC ACTIVE</span>
             </div>
 
-            <div class="main-view" id="main-view">
-                </div>
+            <div class="main-view" id="main-view"></div>
         </main>
     </div>
 
@@ -309,17 +323,42 @@
             } else {
                 const msg = document.getElementById('auth-msg');
                 msg.style.display = 'block';
-                document.querySelector('.auth-card').style.animation = 'none';
-                void document.querySelector('.auth-card').offsetWidth;
-                document.querySelector('.auth-card').style.animation = 'shake 0.4s ease';
+                const card = document.querySelector('.auth-card');
+                card.style.animation = 'none';
+                void card.offsetWidth;
+                card.style.animation = 'shake 0.4s ease';
             }
         }
 
-        /* --- ROUTING & RENDERING --- */
+        /* --- NAVIGATION & MOBILE LOGIC --- */
+        function toggleMenu() {
+            const nav = document.getElementById('side-nav');
+            nav.classList.toggle('active');
+            document.body.classList.toggle('menu-open');
+        }
+
+        // Close menu when clicking outside on mobile
+        document.addEventListener('click', (e) => {
+            const nav = document.getElementById('side-nav');
+            if (document.body.classList.contains('menu-open') && 
+                !nav.contains(e.target) && 
+                !e.target.classList.contains('menu-toggle')) {
+                toggleMenu();
+            }
+        });
+
         function nav(v) {
             document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-            event.currentTarget.classList.add('active');
+            // Use event.currentTarget to handle the click correctly
+            if(event) event.currentTarget.classList.add('active');
+            
             render(v);
+
+            // Auto-close on mobile
+            if(window.innerWidth <= 1024) {
+                document.getElementById('side-nav').classList.remove('active');
+                document.body.classList.remove('menu-open');
+            }
         }
 
         function render(v) {
@@ -334,12 +373,12 @@
                 case 'hub':
                     view.innerHTML = `
                         <div class="stat-row">
-                            <div class="stat-card glass"><h4 class="neon-text">Live Emergencies</h4><span class="val" id="stat-active">${stats.ops}</span><span style="color:var(--success); font-size:0.7rem;">● 3 Incoming from Miyapur</span></div>
-                            <div class="stat-card glass"><h4>Total Missions</h4><span class="val">${stats.completed}</span><span style="color:var(--dim); font-size:0.7rem;">99.2% Success Rate</span></div>
-                            <div class="stat-card glass"><h4>Daily Revenue</h4><span class="val" style="color:var(--accent)">₹${stats.revenue.toLocaleString()}</span><span style="color:var(--success); font-size:0.7rem;">▲ 12% vs Yesterday</span></div>
-                            <div class="stat-card glass"><h4>Avg ETA</h4><span class="val">${stats.response}</span><span style="color:var(--success); font-size:0.7rem;">● Optimal Range</span></div>
+                            <div class="stat-card glass"><h4 class="neon-text">Live Emergencies</h4><span class="val" id="stat-active">${stats.ops}</span><span style="color:var(--success); font-size:0.7rem;">● 3 Incoming</span></div>
+                            <div class="stat-card glass"><h4>Total Missions</h4><span class="val">${stats.completed}</span><span style="color:var(--dim); font-size:0.7rem;">99.2% Success</span></div>
+                            <div class="stat-card glass"><h4>Daily Revenue</h4><span class="val" style="color:var(--accent)">₹${stats.revenue.toLocaleString()}</span><span style="color:var(--success); font-size:0.7rem;">▲ 12%</span></div>
+                            <div class="stat-card glass"><h4>Avg ETA</h4><span class="val">${stats.response}</span><span style="color:var(--success); font-size:0.7rem;">● Optimal</span></div>
                         </div>
-                        <div style="display:grid; grid-template-columns: 2fr 1fr; gap:30px;">
+                        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap:30px;">
                             <div class="panel glass">
                                 <div class="panel-head"><h3>Mission Volume (7 Days)</h3></div>
                                 <div class="chart-sim" id="hub-chart"></div>
@@ -378,7 +417,7 @@
                                     <thead><tr><th>Responder</th><th>Designation</th><th>Earnings</th><th>Rating</th><th>Status</th></tr></thead>
                                     <tbody>
                                         ${C_NAMES.slice(0,8).filter(n => n.toLowerCase().includes(q)).map(n => `
-                                            <tr><td><strong>${n}</strong></td><td>Paramedic Advanced</td><td>₹${Math.floor(Math.random()*2000)+500}</td><td>⭐ 4.${Math.floor(Math.random()*9)}</td><td><span class="pill ${Math.random() > 0.3 ? 'p-online' : 'p-offline'}">${Math.random() > 0.3 ? 'ONLINE' : 'OFFLINE'}</span></td></tr>
+                                            <tr><td><strong>${n}</strong></td><td>Ambulance Driver</td><td>₹${Math.floor(Math.random()*2000)+500}</td><td>⭐ 4.${Math.floor(Math.random()*9)}</td><td><span class="pill ${Math.random() > 0.3 ? 'p-online' : 'p-offline'}">${Math.random() > 0.3 ? 'ONLINE' : 'OFFLINE'}</span></td></tr>
                                         `).join('')}
                                     </tbody>
                                 </table>
@@ -426,7 +465,7 @@
                                     <thead><tr><th>Hospital</th><th>Admin</th><th>Location</th><th>Status</th><th>Action</th></tr></thead>
                                     <tbody>
                                         ${H_NAMES.filter(h => h.name.toLowerCase().includes(q)).map(h => `
-                                            <tr><td><strong>${h.name}</strong></td><td>${h.admin}</td><td>${h.area}</td><td><span class="pill ${h.status == 'Priority' ? 'p-warn' : 'p-online'}">${h.status}</span></td><td><button class="action-btn">MESSAGRE</button> <button class="action-btn">PROMOTE</button></td></tr>
+                                            <tr><td><strong>${h.name}</strong></td><td>${h.admin}</td><td>${h.area}</td><td><span class="pill ${h.status == 'Priority' ? 'p-warn' : 'p-online'}">${h.status}</span></td><td><button class="action-btn">MSG</button></td></tr>
                                         `).join('')}
                                     </tbody>
                                 </table>
@@ -453,7 +492,7 @@
                 }
 
                 if(Math.random() > 0.8) {
-                    const msgs = ["New Emergency: KPHB Phase 1", "Responder Vikram Online", "Payment Received from Omni Care", "System sync complete"];
+                    const msgs = ["New Emergency: KPHB Phase 1", "Responder Vikram Online", "Payment Received", "System sync complete"];
                     pushToast(msgs[Math.floor(Math.random()*msgs.length)]);
                 }
             }, 1000);
@@ -462,6 +501,7 @@
         function genChart(id) {
             const wrap = document.getElementById(id);
             if(!wrap) return;
+            wrap.innerHTML = '';
             for(let i=0; i<12; i++) {
                 const b = document.createElement('div');
                 b.className = 'bar';
@@ -483,6 +523,7 @@
         function initMap() {
             const wrap = document.getElementById('map-wrap');
             const pings = document.getElementById('pings');
+            pings.innerHTML = '';
             H_NAMES.forEach(h => {
                 const p = document.createElement('div');
                 p.className = 'emergency-ping';
@@ -500,9 +541,7 @@
             }
         }
 
-        function doSearch() {
-            render(currentView);
-        }
+        function doSearch() { render(currentView); }
     </script>
 </body>
 </html>
