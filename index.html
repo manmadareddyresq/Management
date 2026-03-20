@@ -3,606 +3,493 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ResQ | Quantum Command Tower v5.0</title>
+    <title>ResQ Emergency Ops | Command Center</title>
     <style>
         :root {
             --primary: #E53935;
-            --secondary: #0D1B2A;
             --accent: #00E5FF;
-            --bg: #020508;
-            --card-bg: rgba(13, 27, 42, 0.6);
-            --glass-border: rgba(255, 255, 255, 0.08);
-            --text: #e0e1dd;
+            --bg-dark: #020508;
+            --panel-bg: rgba(13, 27, 42, 0.7);
+            --sidebar-bg: #050a0f;
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --text-main: #e0e1dd;
             --text-dim: #8d99ae;
             --success: #00ff88;
             --warning: #ffb100;
             --danger: #ff4d4d;
-            --shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
+            --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
-        body { background: var(--bg); color: var(--text); overflow: hidden; height: 100vh; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: var(--font); }
+        body { background: var(--bg-dark); color: var(--text-main); overflow: hidden; height: 100vh; }
 
         /* --- KEYFRAMES --- */
-        @keyframes scan { 0% { top: -10%; } 100% { top: 110%; } }
-        @keyframes glow { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
-        @keyframes slideIn { from { transform: translateX(-20px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-        @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-10px); } 100% { transform: translateY(0px); } }
-        @keyframes spin { 100% { transform: rotate(360deg); } }
+        @keyframes bgFlow { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+        @keyframes slideIn { from { transform: translateX(30px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes pulse { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.1); opacity: 0.7; } 100% { transform: scale(1); opacity: 1; } }
+        @keyframes entryBlur { 0% { filter: blur(20px) brightness(2); transform: scale(1.1); } 100% { filter: blur(0); transform: scale(1); } }
+        @keyframes shake { 0%, 100% { transform: translate(0, 0); } 25% { transform: translate(-5px, 0); } 50% { transform: translate(5px, 0); } 75% { transform: translate(-5px, 0); } }
 
         .hidden { display: none !important; }
 
-        /* --- LOGIN SYSTEM --- */
+        /* --- LOGIN SCREEN --- */
         #login-screen {
             height: 100vh; width: 100vw; display: flex; align-items: center; justify-content: center;
-            background: radial-gradient(circle at center, #1b263b 0%, #020508 100%);
-            position: relative; overflow: hidden;
+            background: linear-gradient(-45deg, #020508, #0d1b2a, #1b263b, #050a0f);
+            background-size: 400% 400%; animation: bgFlow 15s ease infinite;
+            position: fixed; z-index: 1000; transition: 0.8s cubic-bezier(0.85, 0, 0.15, 1);
         }
 
-        .login-bg-anim {
-            position: absolute; width: 100%; height: 100%; top: 0; left: 0;
-            background: repeating-linear-gradient(0deg, rgba(0,229,255,0.03) 0px, transparent 1px);
-            background-size: 100% 4px; pointer-events: none;
+        .login-glass {
+            width: 400px; padding: 50px; background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(20px); border: 1px solid var(--glass-border);
+            border-radius: 30px; box-shadow: 0 25px 50px rgba(0,0,0,0.5); text-align: center;
         }
 
-        .login-card {
-            width: 420px; padding: 50px; background: rgba(255, 255, 255, 0.03);
-            backdrop-filter: blur(25px); border: 1px solid var(--glass-border);
-            border-radius: 24px; box-shadow: var(--shadow); z-index: 10;
-            transition: 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-        }
+        .login-glass h1 { color: var(--primary); font-size: 2.5rem; letter-spacing: 4px; margin-bottom: 5px; }
+        .login-glass p { color: var(--text-dim); font-size: 0.8rem; margin-bottom: 40px; }
 
-        .login-card:hover { border-color: var(--accent); }
-        .login-card h1 { color: var(--primary); font-size: 2.8rem; letter-spacing: 5px; text-align: center; margin-bottom: 5px; }
-        .login-card p { color: var(--text-dim); text-align: center; font-size: 0.8rem; margin-bottom: 40px; }
-
-        .form-group { position: relative; margin-bottom: 25px; }
-        .form-group input {
-            width: 100%; padding: 15px; background: rgba(0,0,0,0.5); border: 1px solid var(--glass-border);
+        .input-group { position: relative; margin-bottom: 20px; }
+        .input-group input {
+            width: 100%; padding: 15px 20px; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border);
             border-radius: 12px; color: white; outline: none; transition: 0.3s;
         }
-        .form-group input:focus { border-color: var(--accent); box-shadow: 0 0 15px rgba(0, 229, 255, 0.2); }
+        .input-group input:focus { border-color: var(--accent); box-shadow: 0 0 15px rgba(0, 229, 255, 0.2); }
 
-        .btn-auth {
-            width: 100%; padding: 16px; background: var(--primary); border: none; border-radius: 12px;
-            color: white; font-weight: 700; cursor: pointer; transition: 0.3s; letter-spacing: 1px;
+        .btn-glow {
+            width: 100%; padding: 15px; background: var(--primary); border: none; border-radius: 12px;
+            color: white; font-weight: bold; cursor: pointer; transition: 0.3s; letter-spacing: 1px;
+            box-shadow: 0 0 20px rgba(229, 57, 53, 0.3);
         }
-        .btn-auth:hover { filter: brightness(1.2); transform: translateY(-2px); box-shadow: 0 5px 20px rgba(229, 57, 53, 0.4); }
+        .btn-glow:hover { transform: translateY(-2px); filter: brightness(1.2); box-shadow: 0 0 30px rgba(229, 57, 53, 0.5); }
+        .btn-glow:active { transform: translateY(0) scale(0.98); }
 
-        .login-footer { margin-top: 25px; display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-dim); }
-        .login-footer span { cursor: pointer; transition: 0.2s; }
-        .login-footer span:hover { color: var(--accent); }
+        .demo-box { margin-top: 30px; font-size: 0.75rem; color: var(--accent); opacity: 0.7; }
 
-        .demo-selector { margin-top: 30px; background: rgba(255,255,255,0.05); padding: 15px; border-radius: 12px; font-size: 0.8rem; }
-        .demo-selector div { margin: 5px 0; cursor: pointer; color: var(--accent); }
+        /* --- DASHBOARD STRUCTURE --- */
+        #main-app { display: grid; grid-template-columns: 260px 1fr; height: 100vh; opacity: 0; }
+        .app-entry-anim { animation: entryBlur 1.2s cubic-bezier(0.22, 1, 0.36, 1) forwards; opacity: 1 !important; }
 
-        /* --- LOADING SCREEN --- */
-        #loading-overlay {
-            position: fixed; inset: 0; background: var(--bg); z-index: 10000;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-        }
-        .loader-ring { width: 60px; height: 60px; border: 4px solid var(--glass-border); border-top: 4px solid var(--primary); border-radius: 50%; animation: spin 1s linear infinite; }
-
-        /* --- MAIN LAYOUT --- */
-        .dashboard { display: grid; grid-template-columns: 280px 1fr; height: 100vh; background: var(--bg); }
-
+        /* Sidebar */
         aside { 
-            background: #050a0f; border-right: 1px solid var(--glass-border); padding: 25px;
-            display: flex; flex-direction: column; z-index: 100;
+            background: var(--sidebar-bg); border-right: 1px solid var(--glass-border); 
+            display: flex; flex-direction: column; padding: 25px 15px; z-index: 100;
         }
-
+        .side-logo { color: var(--primary); font-size: 1.5rem; font-weight: 800; letter-spacing: 3px; margin-bottom: 40px; padding-left: 15px; }
+        
         .nav-item {
-            padding: 14px 18px; border-radius: 12px; color: var(--text-dim); cursor: pointer;
-            display: flex; align-items: center; margin-bottom: 6px; transition: 0.2s; font-size: 0.9rem;
+            padding: 12px 15px; border-radius: 12px; color: var(--text-dim); cursor: pointer;
+            margin-bottom: 5px; display: flex; align-items: center; transition: 0.3s ease; font-size: 0.9rem;
         }
-        .nav-item:hover { background: rgba(255,255,255,0.05); color: white; }
-        .nav-item.active { background: var(--primary); color: white; box-shadow: 0 4px 15px rgba(229, 57, 53, 0.3); }
-        .nav-item i { width: 25px; margin-right: 12px; font-style: normal; }
+        .nav-item i { margin-right: 12px; font-style: normal; width: 20px; text-align: center; }
+        .nav-item:hover { background: rgba(255,255,255,0.05); color: var(--accent); transform: translateX(5px); }
+        .nav-item.active { background: var(--primary); color: white; box-shadow: 0 8px 20px rgba(229, 57, 53, 0.3); }
 
-        main { display: flex; flex-direction: column; overflow: hidden; }
-
+        /* Top Bar */
         header {
-            height: 80px; padding: 0 40px; display: flex; align-items: center; justify-content: space-between;
-            background: rgba(5, 10, 15, 0.8); backdrop-filter: blur(15px); border-bottom: 1px solid var(--glass-border);
+            height: 70px; background: rgba(2, 5, 8, 0.8); backdrop-filter: blur(15px);
+            border-bottom: 1px solid var(--glass-border); display: flex; align-items: center;
+            justify-content: space-between; padding: 0 30px;
         }
-
-        .search-container { position: relative; }
-        .search-container input {
-            background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border);
-            padding: 10px 15px 10px 40px; border-radius: 25px; width: 350px; color: white; outline: none;
+        .user-profile { display: flex; align-items: center; gap: 15px; }
+        .logout-btn { 
+            padding: 6px 15px; border: 1px solid var(--primary); border-radius: 8px;
+            color: var(--primary); font-size: 0.75rem; cursor: pointer; transition: 0.3s;
         }
-        .search-container::before { content: '🔍'; position: absolute; left: 15px; top: 10px; font-size: 0.8rem; opacity: 0.5; }
+        .logout-btn:hover { background: var(--primary); color: white; }
 
-        .view-content { flex: 1; padding: 30px; overflow-y: auto; scroll-behavior: smooth; }
-
-        /* --- UI COMPONENTS --- */
-        .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 30px; }
-        .card { 
-            background: var(--card-bg); border: 1px solid var(--glass-border); border-radius: 20px;
-            padding: 25px; position: relative; overflow: hidden; transition: 0.3s;
+        /* Content Area */
+        main { overflow-y: auto; background: radial-gradient(circle at top right, #0d1b2a, #020508); padding: 30px; }
+        
+        /* Grid System */
+        .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 30px; }
+        .card {
+            background: var(--panel-bg); border: 1px solid var(--glass-border); padding: 25px;
+            border-radius: 20px; position: relative; overflow: hidden; transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
-        .card:hover { border-color: var(--accent); transform: translateY(-5px); }
+        .card:hover { transform: translateY(-10px); border-color: var(--accent); box-shadow: 0 15px 30px rgba(0,0,0,0.4); }
         .card-label { font-size: 0.75rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
-        .card-value { font-size: 2rem; font-weight: 800; margin: 10px 0; color: white; }
-        .card-trend { font-size: 0.75rem; font-weight: 600; }
+        .card-value { font-size: 2.2rem; font-weight: 800; margin: 10px 0; display: block; }
+        .trend { font-size: 0.75rem; font-weight: bold; }
+        .trend.up { color: var(--success); }
+        .trend.down { color: var(--danger); }
 
-        /* Map System */
-        .map-wrapper { height: 450px; background: #081018; border-radius: 24px; position: relative; margin-bottom: 30px; overflow: hidden; border: 1px solid var(--glass-border); }
-        .map-bg { 
-            width: 100%; height: 100%; opacity: 0.4;
-            background: radial-gradient(circle at 50% 50%, #1e293b 1px, transparent 1px);
-            background-size: 40px 40px;
+        /* Sections */
+        .view-section { display: none; animation: slideIn 0.5s ease-out forwards; }
+        .view-section.active { display: block; }
+
+        /* Graphs & Tables */
+        .dashboard-row { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; margin-bottom: 30px; }
+        .panel { background: var(--panel-bg); border-radius: 20px; border: 1px solid var(--glass-border); padding: 25px; }
+        .panel-title { font-size: 1rem; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+
+        table { width: 100%; border-collapse: collapse; }
+        th { text-align: left; padding: 12px; font-size: 0.75rem; color: var(--text-dim); text-transform: uppercase; border-bottom: 1px solid var(--glass-border); }
+        td { padding: 15px 12px; font-size: 0.85rem; border-bottom: 1px solid var(--glass-border); transition: 0.2s; }
+        tr:hover td { background: rgba(255,255,255,0.03); }
+
+        .status-pill { padding: 4px 10px; border-radius: 20px; font-size: 0.7rem; font-weight: bold; }
+        .online { background: rgba(0, 255, 136, 0.1); color: var(--success); border: 1px solid var(--success); }
+        .offline { background: rgba(255, 77, 77, 0.1); color: var(--danger); border: 1px solid var(--danger); }
+
+        /* Notification Center */
+        .notify-form input, .notify-form select, .notify-form textarea {
+            width: 100%; padding: 12px; background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border);
+            border-radius: 10px; color: white; margin-bottom: 15px; outline: none;
+        }
+        .template-chip { 
+            display: inline-block; padding: 6px 15px; background: var(--glass-border); 
+            border-radius: 20px; font-size: 0.75rem; cursor: pointer; margin-right: 8px; margin-bottom: 8px;
+            transition: 0.3s;
+        }
+        .template-chip:hover { background: var(--accent); color: #000; }
+
+        /* Map Simulation */
+        .map-container { 
+            height: 400px; background: #081018; border-radius: 20px; position: relative; overflow: hidden; 
+            border: 1px solid var(--glass-border); background-image: radial-gradient(rgba(0, 229, 255, 0.1) 1px, transparent 0); background-size: 40px 40px;
         }
         .amb-marker {
-            position: absolute; width: 24px; height: 24px; background: var(--primary);
-            border-radius: 50%; display: flex; align-items: center; justify-content: center;
-            font-size: 10px; font-weight: bold; border: 2px solid white; box-shadow: 0 0 15px var(--primary);
-            transition: 4s linear; z-index: 5;
+            position: absolute; width: 12px; height: 12px; background: var(--primary);
+            border-radius: 50%; box-shadow: 0 0 15px var(--primary); transition: 4s linear;
         }
-        .location-tag { position: absolute; font-size: 11px; font-weight: 600; color: #444; pointer-events: none; opacity: 0.8; }
+        .amb-marker::after { content: ''; position: absolute; inset: -5px; border: 1px solid var(--primary); border-radius: 50%; animation: pulse 2s infinite; }
 
-        /* Tables & Lists */
-        table { width: 100%; border-collapse: collapse; }
-        th { text-align: left; padding: 15px; font-size: 0.8rem; color: var(--text-dim); border-bottom: 1px solid var(--glass-border); }
-        td { padding: 18px 15px; font-size: 0.9rem; border-bottom: 1px solid var(--glass-border); transition: 0.2s; }
-        tr:hover td { background: rgba(255,255,255,0.02); }
-
-        .badge { padding: 5px 12px; border-radius: 20px; font-size: 0.7rem; font-weight: bold; }
-        .badge-online { background: rgba(0, 255, 136, 0.1); color: var(--success); }
-        .badge-offline { background: rgba(255, 77, 77, 0.1); color: var(--danger); }
-        .badge-busy { background: rgba(255, 177, 0, 0.1); color: var(--warning); }
-
-        /* Analytics Graph Sim */
-        .graph-container { height: 150px; display: flex; align-items: flex-end; gap: 8px; margin-top: 20px; }
-        .bar { flex: 1; background: linear-gradient(to top, var(--primary), var(--accent)); border-radius: 4px 4px 0 0; transition: height 1s; }
-
-        /* Toasts */
-        #notification-center { position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
+        /* Toast Popup */
+        #toast-box { position: fixed; top: 20px; right: 20px; z-index: 2000; }
         .toast {
-            background: var(--secondary); border-left: 4px solid var(--primary); padding: 15px 25px;
-            border-radius: 8px; box-shadow: 0 10px 40px rgba(0,0,0,0.6); min-width: 320px;
-            animation: slideIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            background: var(--panel-bg); backdrop-filter: blur(15px); border-left: 4px solid var(--primary);
+            padding: 15px 25px; border-radius: 10px; margin-bottom: 10px; min-width: 300px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5); animation: slideIn 0.3s ease-out;
         }
-
-        /* Invoice Modal */
-        #invoice-modal { 
-            position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: none; 
-            align-items: center; justify-content: center; z-index: 2000; backdrop-filter: blur(10px);
-        }
-        .modal-body { background: var(--secondary); border: 1px solid var(--glass-border); padding: 40px; border-radius: 24px; width: 500px; }
-
-        /* Scrollbar */
-        ::-webkit-scrollbar { width: 5px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: var(--glass-border); border-radius: 10px; }
-
     </style>
 </head>
 <body>
 
-    <div id="notification-center"></div>
+    <div id="toast-box"></div>
 
-    <div id="loading-overlay" class="hidden">
-        <div class="loader-ring"></div>
-        <p style="margin-top: 20px; letter-spacing: 2px; font-size: 0.8rem; color: var(--primary);">INITIALIZING QUANTUM CORE...</p>
+    <div id="login-screen">
+        <div class="login-glass">
+            <h1>ResQ</h1>
+            <p>EMERGENCY OPS COMMAND CENTER</p>
+            <div id="login-err" style="color:var(--danger); font-size:0.8rem; margin-bottom:15px; display:none;">Invalid Security Credentials</div>
+            <div class="input-group">
+                <input type="text" id="username" placeholder="Super Admin ID">
+            </div>
+            <div class="input-group">
+                <input type="password" id="password" placeholder="Access Key">
+            </div>
+            <button class="btn-glow" onclick="handleLogin()">AUTHENTICATE</button>
+            <div class="demo-box">DEMO ACCESS: admin / resq99</div>
+        </div>
     </div>
 
-    <section id="login-screen">
-        <div class="login-bg-anim"></div>
-        <div class="login-card">
-            <h1>ResQ</h1>
-            <p>COMMAND TOWER ACCESS | v5.0.1</p>
-            
-            <div id="login-err" style="color:var(--danger); text-align:center; font-size:0.8rem; margin-bottom:15px; display:none;">ACCESS DENIED: INVALID KEY</div>
-
-            <div class="form-group">
-                <input type="text" id="login-uid" placeholder="ADMIN IDENTIFIER">
-            </div>
-            <div class="form-group">
-                <input type="password" id="login-pwd" placeholder="SECURITY PASSPHRASE">
-            </div>
-
-            <button class="btn-auth" onclick="startLogin()">AUTHENTICATE</button>
-
-            <div class="login-footer">
-                <span onclick="alert('Password reset link sent to registered email.')">Forgot Key?</span>
-                <span onclick="alert('Connecting to SOC: 8978257449')">Support Control</span>
-            </div>
-
-            <div class="demo-selector">
-                <div onclick="fill('superadmin', 'master2026')">🔑 Super Admin (master2026)</div>
-                <div onclick="fill('ops_manager', 'ops123')">📡 Operations Manager (ops123)</div>
-                <div onclick="fill('hospital_admin', 'hosp123')">🏥 Hospital Lead (hosp123)</div>
-            </div>
-        </div>
-    </section>
-
-    <div class="dashboard hidden" id="dashboard-main">
+    <div id="main-app">
         <aside>
-            <div style="margin-bottom: 40px; text-align: center;">
-                <h1 style="color: var(--primary); letter-spacing: 4px; font-size: 1.8rem;">ResQ</h1>
-                <div style="font-size: 0.6rem; color: var(--accent); font-weight: bold; margin-top: 5px;">CONTROL TOWER v5.0</div>
-            </div>
-
-            <div class="nav-item active" onclick="nav('global')"><i>🌍</i> Global Center</div>
-            <div class="nav-item" onclick="nav('emergencies')"><i>🚨</i> Emergencies</div>
-            <div class="nav-item" onclick="nav('hospitals')"><i>🏥</i> Hospitals</div>
-            <div class="nav-item" onclick="nav('ambulances')"><i>🚑</i> Fleet Status</div>
-            <div class="nav-item" onclick="nav('drivers')"><i>👨‍⚕️</i> Drivers</div>
-            <div class="nav-item" onclick="nav('customers')"><i>👤</i> Customers</div>
-            <div class="nav-item" onclick="nav('admins')"><i>🔐</i> Access Control</div>
-            <div class="nav-item" onclick="nav('revenue')"><i>💰</i> Financials</div>
-            <div class="nav-item" onclick="nav('analytics')"><i>📈</i> Analytics AI</div>
-            <div class="nav-item" onclick="nav('support')"><i>📞</i> Support Desk</div>
-            <div class="nav-item" onclick="nav('system')"><i>⚙️</i> System Health</div>
-
-            <div style="margin-top: auto; padding-top: 20px;">
-                <button class="btn-auth" style="background: rgba(255,255,255,0.05); font-size: 0.8rem;" onclick="location.reload()">TERMINATE SESSION</button>
-            </div>
+            <div class="side-logo">ResQ</div>
+            <div class="nav-item active" onclick="switchTab('dashboard')"><i>📊</i> Dashboard</div>
+            <div class="nav-item" onclick="switchTab('emergencies')"><i>🚨</i> Emergencies</div>
+            <div class="nav-item" onclick="switchTab('dispatch')"><i>🚑</i> Dispatch Board</div>
+            <div class="nav-item" onclick="switchTab('map')"><i>🗺️</i> Live Map</div>
+            <div class="nav-item" onclick="switchTab('performance')"><i>⚡</i> Performance</div>
+            <div class="nav-item" onclick="switchTab('notifications')"><i>🔔</i> Notifications</div>
+            <div class="nav-item" onclick="switchTab('admins')"><i>🔐</i> Admin Management</div>
+            <div class="nav-item" onclick="switchTab('sectors')"><i>🏢</i> Sectors Control</div>
+            <div class="nav-item" onclick="switchTab('logs')"><i>📜</i> Activity Logs</div>
+            <div class="nav-item" onclick="switchTab('settings')"><i>⚙️</i> System Settings</div>
         </aside>
 
-        <main>
+        <div style="display:flex; flex-direction:column;">
             <header>
-                <div class="search-container">
-                    <input type="text" id="global-search" placeholder="Search records across modules..." onkeyup="handleSearch()">
+                <div style="display:flex; align-items:center; gap:20px;">
+                    <span id="view-title" style="font-weight:bold; letter-spacing:1px; color:var(--accent);">CONTROL TOWER</span>
+                    <span style="font-size:0.7rem; color:var(--success); border:1px solid var(--success); padding:2px 8px; border-radius:5px;">SYSTEM: ONLINE</span>
                 </div>
-                <div style="display:flex; align-items:center; gap:30px;">
-                    <div id="live-timer" style="font-family: monospace; color: var(--accent);">18:32:04</div>
-                    <div style="text-align: right;">
-                        <div id="user-name" style="font-weight: bold; font-size: 0.9rem;">Admin Name</div>
-                        <div id="user-role" style="font-size: 0.7rem; color: var(--text-dim);">SUPER_ADMIN</div>
-                    </div>
+                <div class="user-profile">
+                    <span id="clock" style="font-family:monospace; color:var(--text-dim);">12:00:00</span>
+                    <span style="font-size:0.9rem;">Welcome, <b>Super Admin</b></span>
+                    <div class="logout-btn" onclick="location.reload()">LOGOUT</div>
                 </div>
             </header>
 
-            <div class="view-content" id="view-port">
-                </div>
-        </main>
-    </div>
+            <main id="content-area">
+                
+                <div id="view-dashboard" class="view-section active">
+                    <div class="stat-grid">
+                        <div class="card">
+                            <span class="card-label">Total Emergencies</span>
+                            <span class="card-value" id="stat-total">1,284</span>
+                            <span class="trend up">▲ 14.2%</span>
+                        </div>
+                        <div class="card">
+                            <span class="card-label">Active Now</span>
+                            <span class="card-value" id="stat-active" style="color:var(--primary)">24</span>
+                            <span class="trend down">▼ 2.1%</span>
+                        </div>
+                        <div class="card">
+                            <span class="card-label">Completed Today</span>
+                            <span class="card-value" id="stat-done">142</span>
+                            <span class="trend up">▲ 8.4%</span>
+                        </div>
+                        <div class="card">
+                            <span class="card-label">Response Rate</span>
+                            <span class="card-value" id="stat-rate">98.4%</span>
+                            <span class="trend up">▲ 0.5%</span>
+                        </div>
+                    </div>
 
-    <div id="invoice-modal">
-        <div class="modal-body">
-            <h2 id="modal-title" style="color:var(--primary); margin-bottom:20px;">Report Generation</h2>
-            <div id="modal-content" style="color: var(--text-dim); line-height: 1.8;"></div>
-            <div style="margin-top: 30px; display: flex; justify-content: flex-end; gap: 15px;">
-                <button class="btn-auth" style="width: auto; padding: 10px 20px; background: transparent; border: 1px solid var(--glass-border);" onclick="closeModal()">CANCEL</button>
-                <button class="btn-auth" style="width: auto; padding: 10px 20px;" onclick="alert('Exporting Data...')">EXPORT DATA</button>
-            </div>
+                    <div class="dashboard-row">
+                        <div class="panel">
+                            <div class="panel-title">7-Day Emergency Trend <span style="font-size:0.7rem; opacity:0.5;">LIVE DATA SYNC</span></div>
+                            <div id="chart-sim" style="height:200px; display:flex; align-items:flex-end; gap:10px; padding-bottom:20px;">
+                                <div class="bar" style="height:40%; flex:1; background:var(--primary); border-radius:5px 5px 0 0;"></div>
+                                <div class="bar" style="height:60%; flex:1; background:var(--primary); border-radius:5px 5px 0 0;"></div>
+                                <div class="bar" style="height:45%; flex:1; background:var(--primary); border-radius:5px 5px 0 0;"></div>
+                                <div class="bar" style="height:80%; flex:1; background:var(--primary); border-radius:5px 5px 0 0;"></div>
+                                <div class="bar" style="height:55%; flex:1; background:var(--primary); border-radius:5px 5px 0 0;"></div>
+                                <div class="bar" style="height:90%; flex:1; background:var(--accent); border-radius:5px 5px 0 0;"></div>
+                                <div class="bar" style="height:75%; flex:1; background:var(--accent); border-radius:5px 5px 0 0;"></div>
+                            </div>
+                        </div>
+                        <div class="panel">
+                            <div class="panel-title">System Status</div>
+                            <div style="font-size:0.85rem; line-height:2.2;">
+                                <div>Firebase Connection <span style="float:right; color:var(--success)">● ONLINE</span></div>
+                                <div>Real-time Updates <span style="float:right; color:var(--success)">● ACTIVE</span></div>
+                                <div>Emergency Alerts <span style="float:right; color:var(--success)">● ENABLED</span></div>
+                                <div>API Gateway <span style="float:right; color:var(--success)">● STABLE</span></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="panel">
+                        <div class="panel-title">Recent Activity Logs</div>
+                        <table id="recent-logs-table">
+                            <thead>
+                                <tr><th>Timestamp</th><th>Sector</th><th>Action</th><th>Status</th></tr>
+                            </thead>
+                            <tbody>
+                                </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="view-notifications" class="view-section">
+                    <div class="dashboard-row">
+                        <div class="panel">
+                            <div class="panel-title">Broadcast Notification</div>
+                            <div class="notify-form">
+                                <input type="text" id="nt-title" placeholder="Message Title">
+                                <textarea id="nt-body" rows="4" placeholder="Emergency broadcast message..."></textarea>
+                                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                                    <select id="nt-type">
+                                        <option>System Alert</option>
+                                        <option>Weather Warning</option>
+                                        <option>Maintenance</option>
+                                    </select>
+                                    <select id="nt-priority">
+                                        <option>Low</option>
+                                        <option>Medium</option>
+                                        <option>Critical</option>
+                                    </select>
+                                </div>
+                                <button class="btn-glow" onclick="sendNotification()">SEND BROADCAST</button>
+                            </div>
+                        </div>
+                        <div class="panel">
+                            <div class="panel-title">Quick Templates</div>
+                            <div class="template-chip" onclick="fillNT('Emergency Test', 'System-wide emergency alert test. No action required.')">System Test</div>
+                            <div class="template-chip" onclick="fillNT('Maintenance', 'Database syncing in progress for 5 mins.')">Maintenance</div>
+                            <div class="template-chip" onclick="fillNT('Weather Alert', 'Heavy rain expected in JNTU sector. Drive safe.')">Weather</div>
+                            <div class="template-chip" onclick="fillNT('Shift Change', 'Alpha-Shift drivers please report for duty.')">Shift Start</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="view-admins" class="view-section">
+                    <div class="panel">
+                        <div class="panel-title">
+                            Administrator Registry 
+                            <input type="text" id="admin-search" onkeyup="searchAdmin()" placeholder="Search Admins..." style="background:var(--glass-border); border:none; padding:8px 15px; border-radius:10px; color:white; font-size:0.8rem;">
+                        </div>
+                        <table id="admin-table">
+                            <thead>
+                                <tr><th>Admin Name</th><th>Role</th><th>Status</th><th>Last Active</th></tr>
+                            </thead>
+                            <tbody id="admin-list">
+                                <tr><td>Srinivas Rao</td><td>Super Admin</td><td><span class="status-pill online">ONLINE</span></td><td>Just Now</td></tr>
+                                <tr><td>Ananya Reddy</td><td>Ops Lead</td><td><span class="status-pill online">ONLINE</span></td><td>2m ago</td></tr>
+                                <tr><td>Vikram Kumar</td><td>Fleet Admin</td><td><span class="status-pill offline">OFFLINE</span></td><td>45m ago</td></tr>
+                                <tr><td>Sarah Khan</td><td>Support Mgr</td><td><span class="status-pill online">ONLINE</span></td><td>10m ago</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="view-map" class="view-section">
+                    <div class="panel">
+                        <div class="panel-title">Hyderabad Ops Simulation <span style="color:var(--primary)">● 12 Active Ambulances</span></div>
+                        <div class="map-container" id="map-world"></div>
+                    </div>
+                </div>
+
+                <div id="view-sectors" class="view-section">
+                    <div class="stat-grid" id="sector-grid">
+                        </div>
+                </div>
+
+            </main>
         </div>
     </div>
 
     <script>
-        // --- REALISTIC DYNAMIC DATA ---
-        const NAMES = ["Sanjay Rao", "Ananya Reddy", "Vikram Malhotra", "Priya Kulkarni", "Rahul Verma", "Sneha Iyer", "Arjun Singh", "Kavita Nair", "Deepak Gupta", "Megha Joshi"];
-        const AREAS = ["KPHB Phase 1", "Kukatpally Housing Board", "JNTU Junction", "Miyapur Metro", "Pragathi Nagar Main Road", "Hi-Tech City", "Kondapur", "Gachibowli"];
-        const HOSPITALS = [
-            { id: 101, name: "Omni Hospital", area: "Kukatpally", rating: 4.8, resp: "4.2m", amb: 12 },
-            { id: 102, name: "Anupama Hospital", area: "KPHB", rating: 4.5, resp: "5.1m", amb: 8 },
-            { id: 103, name: "Prime Hospital", area: "Miyapur", rating: 4.2, resp: "6.8m", amb: 5 },
-            { id: 104, name: "Pranaam Hospital", area: "JNTU", rating: 4.9, resp: "3.9m", amb: 15 },
-            { id: 105, name: "Remedy Care", area: "Pragathi Nagar", rating: 4.0, resp: "7.2m", amb: 6 }
-        ];
-
-        let state = {
-            activeView: 'global',
-            revenue: 1425080,
-            emergencies: 14,
-            activeAmb: 42,
-            hospitals: 5,
-            logs: []
-        };
-
-        // --- AUTH FLOW ---
-        function fill(u, p) { document.getElementById('login-uid').value = u; document.getElementById('login-pwd').value = p; }
+        // --- DATA & STATE ---
+        const SECTORS = ["KPHB", "JNTU", "Miyapur", "Kukatpally", "Pragathi Nagar", "Hi-Tech City"];
+        let dashboardStats = { total: 1284, active: 24, done: 142, rate: 98.4 };
         
-        function startLogin() {
-            const uid = document.getElementById('login-uid').value;
-            const pwd = document.getElementById('login-pwd').value;
+        // --- AUTH ---
+        function handleLogin() {
+            const u = document.getElementById('username').value;
+            const p = document.getElementById('password').value;
+            const screen = document.getElementById('login-screen');
+            const app = document.getElementById('main-app');
 
-            if (pwd === 'master2026' || pwd === 'ops123' || pwd === 'hosp123') {
-                document.getElementById('login-screen').classList.add('hidden');
-                document.getElementById('loading-overlay').classList.remove('hidden');
-                
+            if (u === 'admin' && p === 'resq99') {
+                screen.style.transform = 'scale(1.5) blur(50px)';
+                screen.style.opacity = '0';
                 setTimeout(() => {
-                    document.getElementById('loading-overlay').classList.add('hidden');
-                    document.getElementById('dashboard-main').classList.remove('hidden');
-                    document.getElementById('user-name').innerText = uid.replace('_', ' ').toUpperCase();
-                    renderView('global');
-                    startSimulation();
-                }, 2000);
+                    screen.classList.add('hidden');
+                    app.classList.add('app-entry-anim');
+                    initDashboard();
+                }, 800);
             } else {
                 document.getElementById('login-err').style.display = 'block';
+                document.querySelector('.login-glass').style.animation = 'shake 0.4s';
+                setTimeout(() => document.querySelector('.login-glass').style.animation = '', 400);
             }
         }
 
-        // --- NAVIGATION & ROUTING ---
-        function nav(view) {
+        // --- NAVIGATION ---
+        function switchTab(tabId) {
+            document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
             document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+            document.getElementById('view-' + tabId).classList.add('active');
             event.currentTarget.classList.add('active');
-            state.activeView = view;
-            renderView(view);
-        }
-
-        function renderView(view) {
-            const port = document.getElementById('view-port');
-            port.innerHTML = '';
+            document.getElementById('view-title').innerText = tabId.toUpperCase();
             
-            // Search Context Mapping
-            const searchVal = document.getElementById('global-search').value.toLowerCase();
-
-            if (view === 'global') {
-                port.innerHTML = `
-                    <div class="grid-4">
-                        <div class="card">
-                            <div class="card-label">Active Emergencies</div>
-                            <div class="card-value" id="val-em">${state.emergencies}</div>
-                            <div class="card-trend" style="color:var(--danger);">⚠ 2 Unassigned</div>
-                        </div>
-                        <div class="card">
-                            <div class="card-label">Fleet Online</div>
-                            <div class="card-value" id="val-amb">${state.activeAmb}</div>
-                            <div class="card-trend" style="color:var(--success);">● 98% Capability</div>
-                        </div>
-                        <div class="card">
-                            <div class="card-label">Revenue (24h)</div>
-                            <div class="card-value" id="val-rev">₹${state.revenue.toLocaleString()}</div>
-                            <div class="card-trend" style="color:var(--accent);">15% Commission Applied</div>
-                        </div>
-                        <div class="card">
-                            <div class="card-label">Avg Response Time</div>
-                            <div class="card-value">4.8m</div>
-                            <div class="card-trend" style="color:var(--success);">↓ 12% vs Yesterday</div>
-                        </div>
-                    </div>
-
-                    <div class="map-wrapper">
-                        <div class="map-bg"></div>
-                        <div class="location-tag" style="top:20%; left:20%;">KPHB PHASE 1</div>
-                        <div class="location-tag" style="top:50%; left:10%;">KUKATPALLY</div>
-                        <div class="location-tag" style="top:10%; left:60%;">JNTU</div>
-                        <div class="location-tag" style="top:70%; left:80%;">MIYAPUR</div>
-                        <div id="amb-layer"></div>
-                    </div>
-
-                    <div style="display:grid; grid-template-columns: 2fr 1fr; gap:30px;">
-                        <div class="card" style="padding:0; overflow:hidden;">
-                            <div style="padding:20px; border-bottom:1px solid var(--glass-border); font-weight:bold;">LIVE SYSTEM ACTIVITY FEED</div>
-                            <div id="activity-log" style="height:250px; overflow-y:auto; padding:20px; font-size:0.8rem; font-family:monospace;"></div>
-                        </div>
-                        <div class="card">
-                            <div class="card-label">AI Demand Prediction</div>
-                            <div style="margin-top:15px; font-size:0.85rem; line-height:1.6;">
-                                <p style="color:var(--warning);">● Predicted Spike in JNTU Sector (18:00 - 20:00)</p>
-                                <p style="margin-top:10px;">Recommendation: Relocate 4 available units from Pragathi Nagar to JNTU Junction.</p>
-                                <button class="btn-auth" style="margin-top:20px; padding:10px; font-size:0.7rem;" onclick="notify('Relocation Orders Dispatched')">DEPLOY NOW</button>
-                            </div>
-                        </div>
-                    </div>
-                `;
-                initMapMarkers();
-                refreshLogs();
-            } else if (view === 'hospitals') {
-                port.innerHTML = `
-                    <div class="card">
-                        <div class="panel-h" style="display:flex; justify-content:space-between; margin-bottom:20px;">
-                            <h3>Network Hospital Partners</h3>
-                            <button class="btn-auth" style="width:auto; padding:8px 20px; font-size:0.8rem;">+ ONBOARD HOSPITAL</button>
-                        </div>
-                        <table>
-                            <thead><tr><th>ID</th><th>HOSPITAL NAME</th><th>ZONE</th><th>RATING</th><th>ACTIVE UNITS</th><th>STATUS</th><th>ACTIONS</th></tr></thead>
-                            <tbody id="hospital-table"></tbody>
-                        </table>
-                    </div>
-                `;
-                updateHospitalTable(searchVal);
-            } else if (view === 'drivers') {
-                port.innerHTML = `
-                    <div class="card">
-                        <h3>Ambulance Pilot Registry</h3><br>
-                        <table>
-                            <thead><tr><th>PILOT</th><th>TRIPS</th><th>RATING</th><th>EARNINGS</th><th>STATUS</th><th>ACTIONS</th></tr></thead>
-                            <tbody id="driver-table"></tbody>
-                        </table>
-                    </div>
-                `;
-                updateDriverTable(searchVal);
-            } else if (view === 'admins') {
-                port.innerHTML = `
-                    <div class="card">
-                        <h3>Access Control & Role Management</h3><br>
-                        <table>
-                            <thead><tr><th>ADMIN NAME</th><th>ROLE</th><th>LAST ACTIVE</th><th>STATUS</th><th>PERMISSION</th></tr></thead>
-                            <tbody id="admin-table"></tbody>
-                        </table>
-                    </div>
-                `;
-                updateAdminTable(searchVal);
-            } else if (view === 'revenue') {
-                port.innerHTML = `
-                    <div class="grid-4">
-                        <div class="card"><h3>Total Gross</h3><div class="card-value">₹${state.revenue.toLocaleString()}</div></div>
-                        <div class="card"><h3>Commission Net</h3><div class="card-value">₹${(state.revenue * 0.15).toLocaleString()}</div></div>
-                        <div class="card"><h3>Hospital Payouts</h3><div class="card-value">₹${(state.revenue * 0.85).toLocaleString()}</div></div>
-                        <div class="card"><h3>Pending Settlements</h3><div class="card-value" style="color:var(--warning)">₹12,450</div></div>
-                    </div>
-                    <div class="card">
-                        <h3>Recent Financial Ledger</h3>
-                        <div id="finance-ledger" style="margin-top:20px;"></div>
-                    </div>
-                `;
-                updateFinanceLedger();
-            } else if (view === 'system') {
-                port.innerHTML = `
-                    <div class="card">
-                        <h3>System Node Integrity</h3>
-                        <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:20px; margin-top:30px;">
-                            <div class="card" style="text-align:center;">
-                                <div class="card-label">Customer API</div>
-                                <div style="color:var(--success); font-weight:bold; margin-top:10px;">● OPERATIONAL (18ms)</div>
-                            </div>
-                            <div class="card" style="text-align:center;">
-                                <div class="card-label">Driver Node API</div>
-                                <div style="color:var(--success); font-weight:bold; margin-top:10px;">● OPERATIONAL (24ms)</div>
-                            </div>
-                            <div class="card" style="text-align:center;">
-                                <div class="card-label">Geo-Relay API</div>
-                                <div style="color:var(--warning); font-weight:bold; margin-top:10px;">⚠ UNSTABLE (142ms)</div>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            } else {
-                port.innerHTML = `<div class="card" style="padding:100px; text-align:center;"><h3>MODULE: ${view.toUpperCase()}</h3><p>Active Real-Time Simulation Monitoring Ongoing...</p></div>`;
-            }
+            if(tabId === 'map') initMap();
+            if(tabId === 'sectors') initSectors();
         }
 
-        // --- SIMULATION & REFRESH ENGINES ---
-        function startSimulation() {
-            setInterval(() => {
-                document.getElementById('live-timer').innerText = new Date().toLocaleTimeString();
-                
-                // Random State Changes
-                state.revenue += Math.floor(Math.random() * 500);
-                state.emergencies = 10 + Math.floor(Math.random() * 8);
-                
-                // Auto-Update Stats UI
-                if(document.getElementById('val-rev')) document.getElementById('val-rev').innerText = "₹" + state.revenue.toLocaleString();
-                if(document.getElementById('val-em')) document.getElementById('val-em').innerText = state.emergencies;
-
-                // Push New Logs
-                const events = [
-                    "Ambulance RSQ-01 Assigned to KPHB",
-                    "Emergency Ticket #8822 Cleared",
-                    "Payment Received: ₹1,420 from Kukatpally Ride",
-                    "Alert: Driver 'Vikram' Route Deviation Detected",
-                    "Hospital 'Pranaam' reached Capacity Limit",
-                    "New Admin Login: Ops_User_1"
-                ];
-                const log = `[${new Date().toLocaleTimeString()}] ${events[Math.floor(Math.random()*events.length)]}`;
-                state.logs.unshift(log);
-                if(state.logs.length > 50) state.logs.pop();
-                
-                if (state.activeView === 'global') refreshLogs();
-                if (Math.random() > 0.85) notify(events[Math.floor(Math.random()*events.length)]);
-                
-            }, 3000);
+        // --- DASHBOARD LOGIC ---
+        function initDashboard() {
+            updateClock();
+            setInterval(updateClock, 1000);
+            setInterval(randomizeStats, 3000);
+            setInterval(pushLiveLog, 5000);
+            pushLiveLog();
+            pushLiveLog();
         }
 
-        function handleSearch() {
-            renderView(state.activeView);
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('clock').innerText = now.toLocaleTimeString();
         }
 
-        function refreshLogs() {
-            const container = document.getElementById('activity-log');
-            if(!container) return;
-            container.innerHTML = state.logs.map(l => `<div style="margin-bottom:8px; border-bottom:1px solid rgba(255,255,255,0.02); padding-bottom:4px;">${l}</div>`).join('');
+        function randomizeStats() {
+            dashboardStats.active += Math.floor(Math.random() * 3) - 1;
+            dashboardStats.total += 1;
+            document.getElementById('stat-active').innerText = dashboardStats.active;
+            document.getElementById('stat-total').innerText = dashboardStats.total.toLocaleString();
+            
+            // Randomly flash a card
+            const cards = document.querySelectorAll('.card');
+            const target = cards[Math.floor(Math.random()*cards.length)];
+            target.style.borderColor = 'var(--accent)';
+            setTimeout(() => target.style.borderColor = 'var(--glass-border)', 1000);
         }
 
-        function initMapMarkers() {
-            const layer = document.getElementById('amb-layer');
-            if(!layer) return;
+        function pushLiveLog() {
+            const tbody = document.querySelector('#recent-logs-table tbody');
+            const row = document.createElement('tr');
+            const time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'});
+            const sector = SECTORS[Math.floor(Math.random() * SECTORS.length)];
+            const actions = ["Ambulance Assigned", "Emergency Reported", "Dispatch Confirmed", "Unit Cleared"];
+            const action = actions[Math.floor(Math.random() * actions.length)];
+            
+            row.innerHTML = `<td>${time}</td><td>${sector}</td><td>${action}</td><td><span style="color:var(--success)">Processed</span></td>`;
+            tbody.prepend(row);
+            if(tbody.children.length > 6) tbody.lastChild.remove();
+        }
+
+        // --- MAP SIMULATION ---
+        function initMap() {
+            const map = document.getElementById('map-world');
+            map.innerHTML = '';
             for(let i=0; i<12; i++) {
-                const marker = document.createElement('div');
-                marker.className = 'amb-marker';
-                marker.innerText = "A" + (i+1);
-                marker.style.top = Math.random() * 80 + "%";
-                marker.style.left = Math.random() * 80 + "%";
-                layer.appendChild(marker);
+                const amb = document.createElement('div');
+                amb.className = 'amb-marker';
+                amb.style.left = Math.random() * 90 + '%';
+                amb.style.top = Math.random() * 90 + '%';
+                map.appendChild(amb);
                 
                 setInterval(() => {
-                    marker.style.top = Math.random() * 80 + "%";
-                    marker.style.left = Math.random() * 80 + "%";
-                }, 4000 + (Math.random()*2000));
+                    amb.style.left = Math.random() * 90 + '%';
+                    amb.style.top = Math.random() * 90 + '%';
+                }, 4000 + (Math.random() * 2000));
             }
         }
 
-        function updateHospitalTable(query) {
-            const tbody = document.getElementById('hospital-table');
-            if(!tbody) return;
-            tbody.innerHTML = HOSPITALS.filter(h => h.name.toLowerCase().includes(query) || h.area.toLowerCase().includes(query)).map(h => `
-                <tr>
-                    <td>#H-${h.id}</td>
-                    <td><strong>${h.name}</strong></td>
-                    <td>${h.area}</td>
-                    <td>⭐ ${h.rating}</td>
-                    <td>${h.amb} Units</td>
-                    <td><span class="badge badge-online">ACTIVE</span></td>
-                    <td><button class="btn-auth" style="width:auto; padding:5px 10px; font-size:0.7rem;" onclick="showModal('Hospital Profile: ${h.name}')">DETAILS</button></td>
-                </tr>
-            `).join('');
+        // --- SECTORS ---
+        function initSectors() {
+            const grid = document.getElementById('sector-grid');
+            grid.innerHTML = '';
+            SECTORS.forEach(s => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `
+                    <span class="card-label">Sector</span>
+                    <span class="card-value" style="font-size:1.5rem">${s}</span>
+                    <div style="font-size:0.7rem; color:var(--text-dim); margin-top:10px;">
+                        Load: ${Math.floor(Math.random()*100)}% | Active: ${Math.floor(Math.random()*10)}
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
         }
 
-        function updateDriverTable(query) {
-            const tbody = document.getElementById('driver-table');
-            if(!tbody) return;
-            tbody.innerHTML = NAMES.slice(0, 8).map((n, i) => ({
-                name: n,
-                trips: 120 + (i * 15),
-                rating: (4.2 + (i * 0.1)).toFixed(1),
-                earning: (12400 + (i * 1200)).toLocaleString()
-            })).filter(d => d.name.toLowerCase().includes(query)).map(d => `
-                <tr>
-                    <td><strong>${d.name}</strong></td>
-                    <td>${d.trips}</td>
-                    <td>⭐ ${d.rating}</td>
-                    <td>₹${d.earning}</td>
-                    <td><span class="badge ${Math.random() > 0.2 ? 'badge-online' : 'badge-offline'}">${Math.random() > 0.2 ? 'ONLINE' : 'OFFLINE'}</span></td>
-                    <td><button class="btn-auth" style="width:auto; padding:5px 10px; font-size:0.7rem;">VIEW LOGS</button></td>
-                </tr>
-            `).join('');
+        // --- NOTIFICATIONS ---
+        function fillNT(title, body) {
+            document.getElementById('nt-title').value = title;
+            document.getElementById('nt-body').value = body;
         }
 
-        function updateAdminTable(query) {
-            const tbody = document.getElementById('admin-table');
-            if(!tbody) return;
-            const roles = ["Super Admin", "Operations", "Finance", "Support", "Marketing"];
-            tbody.innerHTML = NAMES.slice(0, 5).map((n, i) => ({
-                name: n,
-                role: roles[i],
-                last: "2m ago"
-            })).filter(a => a.name.toLowerCase().includes(query)).map(a => `
-                <tr>
-                    <td><strong>${a.name}</strong></td>
-                    <td>${a.role}</td>
-                    <td>${a.last}</td>
-                    <td><span class="badge badge-online">ACTIVE</span></td>
-                    <td><button class="btn-auth" style="width:auto; padding:5px 10px; font-size:0.7rem; background:rgba(255,255,255,0.05);">EDIT PERMS</button></td>
-                </tr>
-            `).join('');
-        }
-
-        function updateFinanceLedger() {
-            const ledger = document.getElementById('finance-ledger');
-            if(!ledger) return;
-            let rows = '';
-            for(let i=0; i<8; i++) {
-                const amt = 800 + Math.floor(Math.random()*1500);
-                rows += `<div style="display:flex; justify-content:space-between; padding:15px; border-bottom:1px solid var(--glass-border);">
-                    <span>TRX#${10000+i} - ${AREAS[i % AREAS.length]} Ride</span>
-                    <span>₹${amt} <small style="color:var(--accent);">(Comm: ₹${(amt*0.15).toFixed(0)})</small></span>
-                </div>`;
-            }
-            ledger.innerHTML = rows;
-        }
-
-        // --- UI HELPERS ---
-        function notify(msg) {
-            const center = document.getElementById('notification-center');
+        function sendNotification() {
+            const title = document.getElementById('nt-title').value;
+            if(!title) return;
+            
+            const toastBox = document.getElementById('toast-box');
             const toast = document.createElement('div');
             toast.className = 'toast';
-            toast.innerHTML = `<div style="font-size:0.7rem; color:var(--primary); font-weight:bold; margin-bottom:5px;">SYSTEM ALERT</div><div>${msg}</div>`;
-            center.appendChild(toast);
-            setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 500); }, 5000);
+            toast.innerHTML = `<b>${title}</b><br><small>Broadcast Sent to All Units</small>`;
+            toastBox.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateX(50px)';
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
         }
 
-        function showModal(title) {
-            document.getElementById('modal-title').innerText = title;
-            document.getElementById('modal-content').innerText = "Simulating encrypted data retrieval for selected record. Generating full operational report including trip history, compliance logs, and financial breakdown.";
-            document.getElementById('invoice-modal').style.display = 'flex';
+        // --- SEARCH ADMIN ---
+        function searchAdmin() {
+            const input = document.getElementById('admin-search').value.toLowerCase();
+            const rows = document.querySelectorAll('#admin-list tr');
+            rows.forEach(row => {
+                const text = row.innerText.toLowerCase();
+                row.style.display = text.includes(input) ? '' : 'none';
+            });
         }
-
-        function closeModal() { document.getElementById('invoice-modal').style.display = 'none'; }
-
     </script>
 </body>
 </html>
