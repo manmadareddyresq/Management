@@ -3,472 +3,505 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ResQ | Quantum Super-Admin Command v7.0</title>
+    <title>ResQ | Quantum Command & Control v8.0</title>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap');
+
         :root {
             --primary: #E53935;
-            --secondary: #0D1B2A;
             --accent: #00E5FF;
-            --bg-dark: #010409;
-            --sidebar-bg: #050A0F;
-            --panel-bg: rgba(13, 27, 42, 0.7);
-            --glass-border: rgba(255, 255, 255, 0.08);
-            --text-main: #E0E1DD;
-            --text-dim: #8D99AE;
-            --success: #00FF88;
-            --warning: #FFB100;
-            --danger: #FF4D4D;
-            --neon-glow: 0 0 15px rgba(0, 229, 255, 0.3);
-            --transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            --bg: #020408;
+            --card: rgba(15, 22, 36, 0.7);
+            --sidebar: #05080F;
+            --border: rgba(255, 255, 255, 0.08);
+            --text: #E0E1DD;
+            --dim: #8D99AE;
+            --success: #00E676;
+            --warning: #FFC400;
+            --danger: #FF1744;
+            --glow: 0 0 20px rgba(0, 229, 255, 0.2);
+            --trans: all 0.4s cubic-bezier(0.2, 1, 0.2, 1);
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', -apple-system, sans-serif; -webkit-tap-highlight-color: transparent; }
+        * { margin: 0; padding: 0; box-sizing: border-box; outline: none; -webkit-tap-highlight-color: transparent; }
+        body { background: var(--bg); color: var(--text); font-family: 'Plus Jakarta Sans', sans-serif; overflow: hidden; height: 100vh; line-height: 1.6; }
         
-        body { 
-            background: var(--bg-dark); 
-            color: var(--text-main); 
-            height: 100vh; 
-            overflow: hidden; 
-            font-size: 14px;
-        }
-
         /* --- UTILITIES --- */
         .hidden { display: none !important; }
-        .flex { display: flex; }
-        .grid { display: grid; }
-
-        /* --- LOGIN SYSTEM --- */
-        #login-screen {
-            position: fixed; inset: 0; z-index: 9999;
-            background: radial-gradient(circle at center, #0D1B2A 0%, #010409 100%);
-            display: flex; align-items: center; justify-content: center;
-            padding: 20px; transition: 1s cubic-bezier(0.7, 0, 0.3, 1);
-        }
-
-        #login-particles {
-            position: absolute; inset: 0; pointer-events: none;
-            background-image: radial-gradient(var(--accent) 1px, transparent 1px);
-            background-size: 50px 50px; opacity: 0.1; animation: bgMove 20s linear infinite;
-        }
-        @keyframes bgMove { from { background-position: 0 0; } to { background-position: 100% 100%; } }
-
-        .login-card {
-            width: 100%; max-width: 450px; padding: 50px 40px;
-            background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(20px);
-            border: 1px solid var(--glass-border); border-radius: 30px;
-            text-align: center; box-shadow: 0 25px 50px rgba(0,0,0,0.5);
-            animation: cardEntry 0.8s ease-out;
-        }
-        @keyframes cardEntry { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
-
-        .login-card h1 { color: var(--primary); font-size: 3rem; font-weight: 900; letter-spacing: 5px; margin-bottom: 10px; }
+        .flex-c { display: flex; align-items: center; }
+        .flex-sb { display: flex; align-items: center; justify-content: space-between; }
+        .glass { background: var(--card); backdrop-filter: blur(15px); border: 1px solid var(--border); }
+        .neon-text { text-shadow: 0 0 10px var(--accent); color: var(--accent); }
         
-        .field { position: relative; margin-bottom: 25px; text-align: left; }
-        .field input {
-            width: 100%; padding: 15px 20px; background: rgba(0,0,0,0.5); border: 1px solid var(--glass-border);
-            border-radius: 12px; color: white; outline: none; transition: 0.3s; font-size: 1rem;
+        /* --- LOGIN ENGINE --- */
+        #auth-layer {
+            position: fixed; inset: 0; z-index: 9999; display: flex; align-items: center; justify-content: center;
+            background: radial-gradient(circle at center, #0D1B2A 0%, #010409 100%); transition: 1.2s cubic-bezier(0.8, 0, 0.2, 1);
         }
-        .field label { position: absolute; left: 20px; top: 15px; color: var(--text-dim); transition: 0.3s; pointer-events: none; }
-        .field input:focus ~ label, .field input:not(:placeholder-shown) ~ label { top: -10px; left: 10px; font-size: 0.75rem; color: var(--accent); background: #08111a; padding: 0 8px; }
-        .field input:focus { border-color: var(--accent); box-shadow: var(--neon-glow); }
 
-        .btn-prime {
-            width: 100%; padding: 15px; background: var(--primary); color: white; border: none;
-            border-radius: 12px; font-weight: 800; font-size: 1rem; cursor: pointer;
-            transition: 0.3s; letter-spacing: 2px; box-shadow: 0 10px 20px rgba(229,57,53,0.3);
+        .auth-card {
+            width: 90%; max-width: 440px; padding: 50px 40px; border-radius: 35px; text-align: center;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.6); transform: translateY(0); animation: authFloat 4s ease-in-out infinite;
         }
-        .btn-prime:hover { transform: translateY(-2px); filter: brightness(1.2); box-shadow: 0 15px 30px rgba(229,57,53,0.5); }
+        @keyframes authFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
 
-        /* --- APP STRUCTURE --- */
-        #main-layout {
+        .auth-card h1 { font-size: 3.5rem; font-weight: 800; color: var(--primary); letter-spacing: 6px; margin-bottom: 5px; }
+        .auth-card p { color: var(--dim); font-size: 0.8rem; letter-spacing: 3px; margin-bottom: 40px; }
+
+        .input-group { position: relative; margin-bottom: 25px; text-align: left; }
+        .input-group input {
+            width: 100%; padding: 18px 20px; background: rgba(0,0,0,0.4); border: 1px solid var(--border);
+            border-radius: 15px; color: white; font-size: 1rem; transition: 0.3s;
+        }
+        .input-group label { position: absolute; left: 20px; top: 18px; color: var(--dim); transition: 0.3s; pointer-events: none; }
+        .input-group input:focus ~ label, .input-group input:not(:placeholder-shown) ~ label {
+            top: -12px; left: 15px; font-size: 0.75rem; color: var(--accent); background: #08111a; padding: 0 10px;
+        }
+        .input-group input:focus { border-color: var(--accent); box-shadow: var(--glow); }
+
+        .auth-btn {
+            width: 100%; padding: 18px; background: var(--primary); color: white; border: none; border-radius: 15px;
+            font-weight: 800; font-size: 1.1rem; cursor: pointer; transition: 0.3s; letter-spacing: 2px;
+            box-shadow: 0 10px 25px rgba(229, 57, 53, 0.4);
+        }
+        .auth-btn:hover { filter: brightness(1.2); transform: scale(1.02); }
+
+        #cred-reveal { margin-top: 30px; font-family: 'JetBrains Mono'; font-size: 0.8rem; color: var(--accent); min-height: 20px; }
+
+        /* --- LOADING OVERLAY --- */
+        #loader {
+            position: fixed; inset: 0; z-index: 10000; background: var(--bg); display: none;
+            flex-direction: column; align-items: center; justify-content: center;
+        }
+        .quantum-ring { width: 100px; height: 100px; border: 4px solid var(--border); border-top: 4px solid var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        /* --- DASHBOARD ARCHITECTURE --- */
+        #app-shell {
             display: grid; grid-template-columns: 280px 1fr; height: 100vh;
-            opacity: 0; transform: scale(1.05); transition: 1s cubic-bezier(0.2, 1, 0.2, 1);
+            opacity: 0; transform: scale(1.1) blur(20px); transition: 1.2s cubic-bezier(0.1, 0.9, 0.2, 1);
         }
 
-        /* SIDEBAR - RESPONSIVE */
-        #sidebar {
-            background: var(--sidebar-bg); border-right: 1px solid var(--glass-border);
-            display: flex; flex-direction: column; height: 100%; z-index: 100;
-            transition: var(--transition);
+        /* Sidebar Responsive Logic */
+        #side-nav {
+            background: var(--sidebar); border-right: 1px solid var(--border); display: flex; flex-direction: column;
+            padding: 30px 15px; transition: var(--trans); z-index: 100;
         }
 
-        .side-head { padding: 30px 25px; font-size: 1.8rem; font-weight: 900; color: var(--primary); letter-spacing: 3px; }
-        .nav-container { flex: 1; overflow-y: auto; padding: 10px; }
-        
+        .side-logo { font-size: 2.2rem; font-weight: 800; color: var(--primary); letter-spacing: 4px; padding: 0 20px 40px; }
+        .nav-list { flex: 1; overflow-y: auto; }
         .nav-item {
-            display: flex; align-items: center; padding: 12px 20px; margin-bottom: 5px;
-            border-radius: 12px; color: var(--text-dim); cursor: pointer; transition: 0.3s;
-            text-decoration: none; font-size: 0.9rem;
+            display: flex; align-items: center; padding: 14px 20px; margin-bottom: 6px; border-radius: 14px;
+            color: var(--dim); cursor: pointer; transition: 0.3s; font-size: 0.9rem; border: 1px solid transparent;
         }
-        .nav-item i { margin-right: 15px; width: 20px; text-align: center; font-style: normal; }
-        .nav-item:hover { background: rgba(255,255,255,0.05); color: white; transform: translateX(5px); }
-        .nav-item.active { background: var(--primary); color: white; box-shadow: 0 8px 20px rgba(229,57,53,0.3); }
+        .nav-item i { margin-right: 15px; font-style: normal; width: 22px; text-align: center; }
+        .nav-item:hover { background: rgba(255,255,255,0.03); color: white; transform: translateX(5px); }
+        .nav-item.active { background: var(--primary); color: white; box-shadow: 0 10px 20px rgba(229, 57, 53, 0.3); border-color: rgba(255,255,255,0.1); }
 
-        /* TOP BAR */
+        /* Content Area */
         header {
-            height: 80px; background: rgba(1, 4, 9, 0.8); backdrop-filter: blur(20px);
-            border-bottom: 1px solid var(--glass-border); display: flex; align-items: center;
-            justify-content: space-between; padding: 0 30px; position: sticky; top: 0; z-index: 50;
+            height: 90px; background: rgba(2, 4, 8, 0.8); backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between;
+            padding: 0 40px; position: sticky; top: 0; z-index: 50;
         }
 
-        .search-container { position: relative; width: 40%; max-width: 500px; }
-        .search-container input {
-            width: 100%; padding: 12px 20px 12px 45px; background: rgba(255,255,255,0.05);
-            border: 1px solid var(--glass-border); border-radius: 30px; color: white; outline: none; transition: 0.3s;
+        .search-box { position: relative; width: 400px; }
+        .search-box input {
+            width: 100%; padding: 14px 20px 14px 50px; background: rgba(255,255,255,0.05);
+            border: 1px solid var(--border); border-radius: 30px; color: white; transition: 0.3s;
         }
-        .search-container input:focus { border-color: var(--accent); background: rgba(255,255,255,0.08); }
-        .search-container::before { content: '🔍'; position: absolute; left: 18px; top: 12px; opacity: 0.5; }
+        .search-box input:focus { border-color: var(--accent); box-shadow: var(--glow); width: 450px; }
+        .search-box::before { content: '🔍'; position: absolute; left: 20px; top: 14px; opacity: 0.5; }
 
-        .admin-meta { display: flex; align-items: center; gap: 20px; text-align: right; }
-        .live-clock { color: var(--accent); font-family: monospace; font-weight: bold; font-size: 1.1rem; }
+        .admin-profile { display: flex; align-items: center; gap: 20px; text-align: right; }
+        .live-time { font-family: 'JetBrains Mono'; color: var(--accent); font-weight: bold; font-size: 1.2rem; }
 
-        /* MAIN CONTENT VIEWPORT */
-        .viewport { padding: 30px; overflow-y: auto; height: calc(100vh - 80px); scroll-behavior: smooth; }
+        /* Viewport */
+        .main-view { padding: 40px; overflow-y: auto; height: calc(100vh - 90px); scroll-behavior: smooth; }
 
-        /* MODULE UI COMPONENTS */
-        .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; margin-bottom: 30px; }
-        .card {
-            background: var(--panel-bg); border: 1px solid var(--glass-border); border-radius: 20px;
-            padding: 25px; transition: 0.4s; position: relative; overflow: hidden;
-        }
-        .card:hover { transform: translateY(-5px); border-color: var(--accent); }
-        .card-val { font-size: 2.2rem; font-weight: 900; display: block; margin: 10px 0; }
+        /* GRID COMPONENTS */
+        .stat-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 25px; margin-bottom: 40px; }
+        .stat-card { padding: 30px; border-radius: 25px; transition: 0.4s; position: relative; overflow: hidden; }
+        .stat-card:hover { transform: translateY(-10px); border-color: var(--accent); }
+        .stat-card h4 { font-size: 0.75rem; color: var(--dim); text-transform: uppercase; letter-spacing: 1px; }
+        .stat-card .val { font-size: 2.8rem; font-weight: 800; display: block; margin: 15px 0; }
         
-        .table-wrap { 
-            background: var(--panel-bg); border: 1px solid var(--glass-border); border-radius: 20px; 
-            overflow: hidden; width: 100%; margin-top: 20px;
-        }
-        .table-scroll { overflow-x: auto; width: 100%; }
-        table { width: 100%; border-collapse: collapse; min-width: 700px; }
-        th { text-align: left; padding: 15px 20px; background: rgba(255,255,255,0.03); font-size: 0.75rem; color: var(--text-dim); text-transform: uppercase; }
-        td { padding: 15px 20px; border-bottom: 1px solid var(--glass-border); font-size: 0.85rem; }
-        tr:last-child td { border-bottom: none; }
+        .panel { padding: 30px; border-radius: 30px; margin-bottom: 30px; }
+        .panel-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
 
-        /* MOBILE OVERRIDES */
-        @media (max-width: 992px) {
-            #main-layout { grid-template-columns: 1fr; }
-            #sidebar { 
-                position: fixed; left: -280px; top: 0; bottom: 0; width: 280px; 
-                box-shadow: 20px 0 50px rgba(0,0,0,0.5); 
-            }
-            #sidebar.open { left: 0; }
-            .search-container { width: 60%; }
-            .admin-meta .info-box { display: none; }
+        /* TABLE UI */
+        .table-container { width: 100%; overflow-x: auto; border-radius: 20px; }
+        table { width: 100%; border-collapse: collapse; min-width: 800px; }
+        th { text-align: left; padding: 20px; background: rgba(255,255,255,0.02); font-size: 0.7rem; color: var(--dim); text-transform: uppercase; letter-spacing: 1px; }
+        td { padding: 20px; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
+        tr:hover td { background: rgba(255,255,255,0.01); }
+
+        /* --- MOBILE RESPONSIVENESS --- */
+        @media (max-width: 1024px) {
+            #app-shell { grid-template-columns: 1fr; }
+            #side-nav { position: fixed; left: -280px; top: 0; bottom: 0; width: 280px; box-shadow: 30px 0 60px rgba(0,0,0,0.8); }
+            #side-nav.active { left: 0; }
+            .search-box { display: none; }
+            .main-view { padding: 20px; }
         }
 
-        @media (max-width: 600px) {
-            header { padding: 0 15px; }
-            .viewport { padding: 15px; }
-            .search-container { display: none; }
-            .stat-grid { grid-template-columns: 1fr; }
-            .login-card { padding: 30px 20px; }
-        }
+        .menu-toggle { display: none; font-size: 1.8rem; cursor: pointer; color: white; margin-right: 20px; }
+        @media (max-width: 1024px) { .menu-toggle { display: block; } }
 
-        /* MENU TOGGLE */
-        .menu-btn { 
-            display: none; font-size: 1.5rem; background: transparent; border: none; color: white; cursor: pointer; 
-        }
-        @media (max-width: 992px) { .menu-btn { display: block; margin-right: 15px; } }
+        /* --- MODULE SPECIFICS --- */
+        .map-box { height: 450px; border-radius: 25px; background: #081018; position: relative; overflow: hidden; border: 1px solid var(--border); }
+        .grid-bg { position: absolute; inset: 0; background-image: radial-gradient(var(--border) 1px, transparent 1px); background-size: 40px 40px; }
+        .amb { position: absolute; width: 12px; height: 12px; background: var(--primary); border-radius: 50%; box-shadow: 0 0 15px var(--primary); transition: 4s linear; z-index: 5; }
+        .emergency-ping { position: absolute; width: 40px; height: 40px; border: 2px solid var(--danger); border-radius: 50%; animation: ping 1.5s infinite; transform: translate(-50%, -50%); }
+        @keyframes ping { 0% { transform: scale(0.1); opacity: 1; } 100% { transform: scale(2.5); opacity: 0; } }
 
-        /* MAP SIM */
-        .map-container { height: 400px; background: #080C14; border-radius: 20px; position: relative; overflow: hidden; border: 1px solid var(--glass-border); }
-        .amb-unit {
-            position: absolute; width: 12px; height: 12px; background: var(--primary);
-            border-radius: 50%; box-shadow: 0 0 15px var(--primary); transition: 5s linear;
-        }
-        .ping { position: absolute; width: 30px; height: 30px; border: 2px solid var(--danger); border-radius: 50%; animation: ping-anim 1.5s infinite; }
-        @keyframes ping-anim { 0% { transform: scale(0.1); opacity: 1; } 100% { transform: scale(2); opacity: 0; } }
+        .chart-sim { display: flex; align-items: flex-end; gap: 10px; height: 200px; padding: 20px 0; }
+        .bar { flex: 1; background: linear-gradient(to top, var(--primary), var(--accent)); border-radius: 8px 8px 0 0; transition: 1.5s cubic-bezier(0.1, 0.9, 0.2, 1); }
 
         /* NOTIFICATIONS */
-        #notifier { position: fixed; top: 90px; right: 20px; z-index: 1000; pointer-events: none; }
-        .alert { 
-            background: var(--sidebar-bg); border-left: 4px solid var(--primary); 
-            padding: 15px 25px; border-radius: 10px; margin-bottom: 10px; 
-            box-shadow: 0 10px 30px rgba(0,0,0,0.4); pointer-events: auto;
-            animation: slideIn 0.4s cubic-bezier(0.1, 0.9, 0.2, 1) forwards;
+        #toast-wrap { position: fixed; top: 110px; right: 30px; width: 340px; z-index: 1000; pointer-events: none; }
+        .toast {
+            background: rgba(10, 15, 25, 0.95); backdrop-filter: blur(10px); padding: 20px; border-radius: 15px; margin-bottom: 12px;
+            border-left: 4px solid var(--primary); animation: slideIn 0.5s cubic-bezier(0.1, 0.9, 0.2, 1) forwards; pointer-events: auto;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
         @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 
-        /* BUTTONS */
-        .status-pill { padding: 4px 10px; border-radius: 20px; font-size: 0.7rem; font-weight: 800; }
-        .online { background: rgba(0, 255, 136, 0.1); color: var(--success); border: 1px solid var(--success); }
-        .offline { background: rgba(255, 77, 77, 0.1); color: var(--danger); border: 1px solid var(--danger); }
+        /* PILLS */
+        .pill { padding: 6px 14px; border-radius: 20px; font-size: 0.7rem; font-weight: bold; text-transform: uppercase; }
+        .p-online { background: rgba(0, 230, 118, 0.1); color: var(--success); border: 1px solid var(--success); }
+        .p-offline { background: rgba(255, 23, 68, 0.1); color: var(--danger); border: 1px solid var(--danger); }
+        .p-warn { background: rgba(255, 196, 0, 0.1); color: var(--warning); border: 1px solid var(--warning); }
+
+        .action-btn { background: transparent; border: 1px solid var(--border); color: var(--text); padding: 8px 16px; border-radius: 10px; cursor: pointer; transition: 0.3s; font-size: 0.8rem; }
+        .action-btn:hover { background: var(--primary); border-color: var(--primary); color: white; }
+
     </style>
 </head>
 <body>
 
-    <div id="notifier"></div>
+    <div id="toast-wrap"></div>
 
-    <div id="login-screen">
-        <div id="login-particles"></div>
-        <div class="login-card">
+    <div id="loader">
+        <div class="quantum-ring"></div>
+        <p style="margin-top:25px; letter-spacing:5px; font-size:0.8rem; color:var(--accent);">INITIALIZING SECURE NODES...</p>
+    </div>
+
+    <div id="auth-layer">
+        <div class="auth-card glass">
             <h1>ResQ</h1>
-            <p style="color: var(--text-dim); margin-bottom: 40px; letter-spacing: 2px; font-size: 0.8rem;">SUPER ADMIN TERMINAL</p>
+            <p>QUANTUM COMMAND TERMINAL</p>
             
-            <div id="login-err" style="color:var(--danger); font-size:0.8rem; margin-bottom:15px; display:none;">ACCESS DENIED: SECURE PROTOCOL BREACH</div>
+            <div id="auth-msg" style="color:var(--danger); font-size:0.8rem; margin-bottom:20px; display:none; font-weight:800;">CRITICAL ERROR: ACCESS KEY INVALID</div>
 
-            <div class="field">
-                <input type="text" id="user-id" placeholder=" " autocomplete="off">
-                <label>ADMIN IDENTIFIER</label>
+            <div class="input-group">
+                <input type="text" id="uid" placeholder=" " autocomplete="off">
+                <label>COMMANDER IDENTIFIER</label>
             </div>
-            <div class="field">
-                <input type="password" id="user-pass" placeholder=" ">
-                <label>SECURITY KEY</label>
-            </div>
-
-            <button class="btn-prime" onclick="performLogin()">AUTHENTICATE</button>
-
-            <div style="margin-top: 30px; font-size: 0.75rem; color: var(--text-dim);">
-                <span style="cursor:pointer; margin-right: 15px;" onclick="alert('Contact HQ Support')">Forgot Key?</span>
-                <span style="cursor:pointer; color: var(--accent);" onclick="window.open('tel:8978257449')">Support: 8978257449</span>
+            <div class="input-group">
+                <input type="password" id="ukey" placeholder=" ">
+                <label>SECURITY PASSPHRASE</label>
             </div>
 
-            <div style="margin-top: 40px; padding: 15px; background: rgba(0,0,0,0.3); border-radius: 15px; font-size: 0.7rem;">
-                <span style="color: var(--accent); font-family: monospace;">DEMO_ID: master | KEY: resq2026</span>
+            <button class="auth-btn" onclick="tryAuth()">AUTHENTICATE</button>
+
+            <div id="cred-reveal"></div>
+
+            <div style="margin-top:30px; font-size:0.75rem; color:var(--dim);">
+                <span style="cursor:pointer; margin-right:15px;" onclick="alert('Contact HQ: 8978257449')">Forgot Passphrase?</span>
+                <span style="color:var(--accent); cursor:pointer;" onclick="window.open('tel:8978257449')">Help: 8978257449</span>
             </div>
         </div>
     </div>
 
-    <div id="main-layout">
-        <aside id="sidebar">
-            <div class="side-head">ResQ</div>
-            <div class="nav-container">
-                <div class="nav-item active" onclick="showModule('hub')"><i>📊</i> Operational Hub</div>
-                <div class="nav-item" onclick="showModule('citizens')"><i>👥</i> Registered Citizens</div>
-                <div class="nav-item" onclick="showModule('responders')"><i>👨‍⚕️</i> ResQ Responders</div>
-                <div class="nav-item" onclick="showModule('performance')"><i>📈</i> Performance Analytics</div>
-                <div class="nav-item" onclick="showModule('geo')"><i>🗺️</i> Geo-Spatial Grid</div>
-                <div class="nav-item" onclick="showModule('fiscal')"><i>💰</i> Fiscal Dashboard</div>
-                <div class="nav-item" onclick="showModule('hospitals')"><i>🏥</i> Hospital Partners</div>
-                <div class="nav-item" onclick="showModule('history')"><i>🚑</i> Mission History</div>
-                <div class="nav-item" onclick="showModule('support')"><i>📞</i> Support Desk</div>
-                <div class="nav-item" onclick="showModule('nodes')"><i>🏢</i> Department Nodes</div>
-                <div class="nav-item" onclick="showModule('governance')"><i>🔐</i> Admin Governance</div>
-                <div class="nav-item" onclick="showModule('settings')"><i>⚙️</i> Core Settings</div>
+    <div id="app-shell">
+        <aside id="side-nav">
+            <div class="side-logo">ResQ</div>
+            <div class="nav-list">
+                <div class="nav-item active" onclick="nav('hub')"><i>📊</i> Operational Hub</div>
+                <div class="nav-item" onclick="nav('citizens')"><i>👥</i> Registered Citizens</div>
+                <div class="nav-item" onclick="nav('responders')"><i>👨‍⚕️</i> ResQ Responders</div>
+                <div class="nav-item" onclick="nav('perf')"><i>📈</i> Performance Analytics</div>
+                <div class="nav-item" onclick="nav('grid')"><i>🗺️</i> Geo-Spatial Grid</div>
+                <div class="nav-item" onclick="nav('fiscal')"><i>💰</i> Fiscal Dashboard</div>
+                <div class="nav-item" onclick="nav('partners')"><i>🏥</i> Hospital Partners</div>
+                <div class="nav-item" onclick="nav('missions')"><i>🚑</i> Mission History</div>
+                <div class="nav-item" onclick="nav('support')"><i>📞</i> Support Desk</div>
+                <div class="nav-item" onclick="nav('nodes')"><i>🏢</i> Department Nodes</div>
+                <div class="nav-item" onclick="nav('gov')"><i>🔐</i> Admin Governance</div>
+                <div class="nav-item" onclick="nav('settings')"><i>⚙️</i> Core Settings</div>
             </div>
-            <div style="padding: 20px;">
-                <button class="btn-prime" style="background:transparent; border:1px solid var(--danger); color:var(--danger);" onclick="location.reload()">TERMINATE SESSION</button>
+            <div style="padding:10px;">
+                <button class="action-btn" style="width:100%; color:var(--danger); border-color:var(--danger);" onclick="location.reload()">TERMINATE SESSION</button>
             </div>
         </aside>
 
-        <div style="display:flex; flex-direction:column; overflow:hidden;">
+        <main>
             <header>
-                <div style="display:flex; align-items:center;">
-                    <button class="menu-btn" onclick="toggleSidebar()">☰</button>
-                    <div class="search-container">
-                        <input type="text" id="global-search" placeholder="Search across all operational data..." onkeyup="filterView()">
+                <div class="flex-c">
+                    <div class="menu-toggle" onclick="document.getElementById('side-nav').classList.toggle('active')">☰</div>
+                    <div class="search-box">
+                        <input type="text" id="master-search" placeholder="Search operational database..." onkeyup="doSearch()">
                     </div>
                 </div>
-                <div class="admin-meta">
-                    <div class="live-clock" id="clock">00:00:00</div>
-                    <div class="info-box">
-                        <div style="font-weight:900; font-size:0.8rem; color:var(--primary);">SUPER ADMIN CONTROL</div>
-                        <div style="font-size:0.7rem; color:var(--text-dim);">CO: LEVEL 10 AUTH</div>
+                <div class="admin-profile">
+                    <div class="live-time" id="clock">00:00:00</div>
+                    <div>
+                        <div style="font-weight:800; color:var(--primary); font-size:0.85rem;">SUPER ADMIN CONTROL</div>
+                        <div style="color:var(--dim); font-size:0.7rem;">COMMANDING OFFICER | LVL 10</div>
                     </div>
                 </div>
             </header>
 
-            <div id="module-header" style="padding: 20px 30px 0; font-size: 0.75rem; color: var(--accent); letter-spacing: 1px;">
-                MODULAR NODE: <span id="node-name">OPERATIONAL HUB</span> | <span style="color:var(--success)">REAL-TIME DATA SYNC ACTIVE</span>
+            <div style="padding: 20px 40px 0; font-size: 0.75rem; color: var(--accent); letter-spacing: 2px;">
+                NODE: <span id="node-name">OPERATIONAL HUB</span> | <span style="color:var(--success)">REAL-TIME SYNC ACTIVE</span>
             </div>
 
-            <main class="viewport" id="viewport">
-                </main>
-        </div>
+            <div class="main-view" id="main-view">
+                </div>
+        </main>
     </div>
 
     <script>
-        /* --- CORE ENGINE --- */
-        const DB = {
-            citizens: [
-                { id: 'C10', name: 'Ravi Teja', phone: '9876543210', loc: 'KPHB', rides: 12, status: 'Premium' },
-                { id: 'C11', name: 'Sneha Reddy', phone: '9123456780', loc: 'JNTU', rides: 5, status: 'Standard' },
-                { id: 'C12', name: 'Vikram Rao', phone: '8877665544', loc: 'Miyapur', rides: 24, status: 'Premium' },
-                { id: 'C13', name: 'Ananya K', phone: '7766554433', loc: 'Kukatpally', rides: 1, status: 'Standard' }
-            ],
-            responders: [
-                { name: 'Arjun S', role: 'Advanced Driver', trips: 142, rating: 4.9, status: 'online' },
-                { name: 'Meera J', role: 'Paramedic Lead', trips: 89, rating: 4.8, status: 'online' },
-                { name: 'Kiran P', role: 'Standard Driver', trips: 230, rating: 4.5, status: 'offline' }
-            ],
-            hospitals: [
-                { name: 'Omni Care', area: 'KPHB', ambulances: 8, priority: 'High' },
-                { name: 'Apex Life', area: 'Kukatpally', ambulances: 5, priority: 'Normal' },
-                { name: 'JNTU Hub', area: 'Pragathi Nagar', ambulances: 12, priority: 'Critical' }
-            ]
+        /* --- CORE DATA --- */
+        const C_NAMES = ["Aryan Sharma", "Priya Nair", "Vikram Singh", "Sanya Gupta", "Rohan Reddy", "Anjali Verma", "Kabir Khan", "Ishita Roy", "Arjun Kapoor", "Meera Das", "Aditya Rao", "Zoya Ali", "Suresh Kumar", "Tanya Sen", "Karan Johar"];
+        const H_NAMES = [
+            { id: 'H1', name: 'Omni Care KPHB', area: 'KPHB Colony', admin: 'Dr. Reddy', status: 'Priority' },
+            { id: 'H2', name: 'Apex Medic Kukatpally', area: 'Kukatpally', admin: 'Dr. Verma', status: 'Normal' },
+            { id: 'H3', name: 'JNTU Emergency Hub', area: 'JNTU Main', admin: 'Dr. Rao', status: 'Priority' },
+            { id: 'H4', name: 'Miyapur Metro Medic', area: 'Miyapur', admin: 'Dr. Singh', status: 'Normal' },
+            { id: 'H5', name: 'Pragathi Health', area: 'Pragathi Nagar', admin: 'Dr. Gupta', status: 'Normal' }
+        ];
+
+        let currentView = 'hub';
+        let stats = { ops: 42, completed: 1840, revenue: 124500, response: '4.2m' };
+
+        /* --- AUTH SYSTEM --- */
+        window.onload = () => {
+            const el = document.getElementById('cred-reveal');
+            const text = "LOGIN: master | KEY: resq2026";
+            let i = 0;
+            const type = () => {
+                if(i < text.length) { el.innerHTML += text.charAt(i); i++; setTimeout(type, 50); }
+            };
+            type();
         };
 
-        let currentModule = 'hub';
-
-        function performLogin() {
-            const id = document.getElementById('user-id').value;
-            const pass = document.getElementById('user-pass').value;
-            if(id === 'master' && pass === 'resq2026') {
-                const ls = document.getElementById('login-screen');
-                ls.style.transform = 'scale(2) blur(30px)';
-                ls.style.opacity = '0';
+        function tryAuth() {
+            const u = document.getElementById('uid').value;
+            const k = document.getElementById('ukey').value;
+            if(u === 'master' && k === 'resq2026') {
+                const layer = document.getElementById('auth-layer');
+                layer.style.transform = 'scale(3) rotate(10deg)';
+                layer.style.opacity = '0';
+                layer.style.filter = 'blur(50px)';
+                document.getElementById('loader').style.display = 'flex';
+                
                 setTimeout(() => {
-                    ls.classList.add('hidden');
-                    const app = document.getElementById('main-layout');
-                    app.style.opacity = '1';
-                    app.style.transform = 'scale(1)';
-                    initApp();
-                }, 800);
+                    document.getElementById('loader').style.display = 'none';
+                    layer.style.display = 'none';
+                    const shell = document.getElementById('app-shell');
+                    shell.style.opacity = '1';
+                    shell.style.transform = 'scale(1) blur(0px)';
+                    render('hub');
+                    startSimulation();
+                }, 2500);
             } else {
-                document.getElementById('login-err').style.display = 'block';
+                const msg = document.getElementById('auth-msg');
+                msg.style.display = 'block';
+                document.querySelector('.auth-card').style.animation = 'none';
+                void document.querySelector('.auth-card').offsetWidth;
+                document.querySelector('.auth-card').style.animation = 'shake 0.4s ease';
             }
         }
 
-        function toggleSidebar() {
-            document.getElementById('sidebar').classList.toggle('open');
-        }
-
-        function initApp() {
-            setInterval(updateTime, 1000);
-            setInterval(simEvents, 5000);
-            showModule('hub');
-        }
-
-        function updateTime() {
-            document.getElementById('clock').innerText = new Date().toLocaleTimeString();
-        }
-
-        function showModule(mod) {
-            currentModule = mod;
+        /* --- ROUTING & RENDERING --- */
+        function nav(v) {
             document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-            event.currentTarget.classList?.add('active');
-            document.getElementById('node-name').innerText = mod.toUpperCase().replace('_', ' ');
-            document.getElementById('sidebar').classList.remove('open');
-            renderModule();
+            event.currentTarget.classList.add('active');
+            render(v);
         }
 
-        function renderModule() {
-            const vp = document.getElementById('viewport');
-            const q = document.getElementById('global-search').value.toLowerCase();
-            vp.innerHTML = '';
+        function render(v) {
+            currentView = v;
+            const view = document.getElementById('main-view');
+            const node = document.getElementById('node-name');
+            const q = document.getElementById('master-search').value.toLowerCase();
+            node.innerText = v.toUpperCase().replace('_', ' ');
+            view.innerHTML = '';
 
-            if(currentModule === 'hub') {
-                vp.innerHTML = `
-                    <div class="stat-grid">
-                        <div class="card"><span class="card-val" style="color:var(--primary)">28</span>Active Emergencies</div>
-                        <div class="card"><span class="card-val">1,402</span>Completed Missions</div>
-                        <div class="card"><span class="card-val" style="color:var(--success)">98%</span>Efficiency Rate</div>
-                        <div class="card"><span class="card-val" style="color:var(--accent)">4.2m</span>Avg Response Time</div>
-                    </div>
-                    <div class="table-wrap">
-                        <div style="padding: 20px; font-weight:bold;">Live Mission Stream</div>
-                        <div class="table-scroll">
-                            <table>
-                                <thead><tr><th>Incident ID</th><th>Citizen</th><th>Location</th><th>Responder</th><th>Status</th></tr></thead>
-                                <tbody>
-                                    <tr><td>#RSQ-901</td><td>Ravi Teja</td><td>KPHB Phase 3</td><td>Arjun S</td><td><span class="status-pill online">EN ROUTE</span></td></tr>
-                                    <tr><td>#RSQ-902</td><td>Sneha R</td><td>JNTU Metro</td><td>Meera J</td><td><span class="status-pill online">ON SITE</span></td></tr>
-                                </tbody>
-                            </table>
+            switch(v) {
+                case 'hub':
+                    view.innerHTML = `
+                        <div class="stat-row">
+                            <div class="stat-card glass"><h4 class="neon-text">Live Emergencies</h4><span class="val" id="stat-active">${stats.ops}</span><span style="color:var(--success); font-size:0.7rem;">● 3 Incoming from Miyapur</span></div>
+                            <div class="stat-card glass"><h4>Total Missions</h4><span class="val">${stats.completed}</span><span style="color:var(--dim); font-size:0.7rem;">99.2% Success Rate</span></div>
+                            <div class="stat-card glass"><h4>Daily Revenue</h4><span class="val" style="color:var(--accent)">₹${stats.revenue.toLocaleString()}</span><span style="color:var(--success); font-size:0.7rem;">▲ 12% vs Yesterday</span></div>
+                            <div class="stat-card glass"><h4>Avg ETA</h4><span class="val">${stats.response}</span><span style="color:var(--success); font-size:0.7rem;">● Optimal Range</span></div>
                         </div>
-                    </div>
-                `;
-            } 
-            else if(currentModule === 'citizens') {
-                vp.innerHTML = `
-                    <div class="table-wrap">
-                        <div class="table-scroll">
-                            <table>
-                                <thead><tr><th>Citizen ID</th><th>Name</th><th>Phone</th><th>Primary Area</th><th>Total Rides</th><th>Tier</th></tr></thead>
-                                <tbody>
-                                    ${DB.citizens.filter(c => c.name.toLowerCase().includes(q)).map(c => `
-                                        <tr><td>${c.id}</td><td>${c.name}</td><td>${c.phone}</td><td>${c.loc}</td><td>${c.rides}</td><td>${c.status}</td></tr>
-                                    `).join('')}
-                                </tbody>
-                            </table>
+                        <div style="display:grid; grid-template-columns: 2fr 1fr; gap:30px;">
+                            <div class="panel glass">
+                                <div class="panel-head"><h3>Mission Volume (7 Days)</h3></div>
+                                <div class="chart-sim" id="hub-chart"></div>
+                            </div>
+                            <div class="panel glass">
+                                <div class="panel-head"><h3>System Activity</h3></div>
+                                <div id="activity-feed" style="font-size:0.8rem; height:200px; overflow-y:auto;"></div>
+                            </div>
                         </div>
-                    </div>
-                `;
-            }
-            else if(currentModule === 'responders') {
-                vp.innerHTML = `
-                    <div class="table-wrap">
-                        <div class="table-scroll">
-                            <table>
-                                <thead><tr><th>Name</th><th>Role</th><th>Total Trips</th><th>Rating</th><th>Status</th></tr></thead>
-                                <tbody>
-                                    ${DB.responders.filter(r => r.name.toLowerCase().includes(q)).map(r => `
-                                        <tr><td>${r.name}</td><td>${r.role}</td><td>${r.trips}</td><td>⭐ ${r.rating}</td><td><span class="status-pill ${r.status}">${r.status.toUpperCase()}</span></td></tr>
-                                    `).join('')}
-                                </tbody>
-                            </table>
+                    `;
+                    genChart('hub-chart');
+                    break;
+
+                case 'citizens':
+                    view.innerHTML = `
+                        <div class="panel glass">
+                            <div class="table-container">
+                                <table>
+                                    <thead><tr><th>Citizen</th><th>Phone</th><th>Primary Zone</th><th>Ride Count</th><th>Tier</th></tr></thead>
+                                    <tbody>
+                                        ${C_NAMES.filter(n => n.toLowerCase().includes(q)).map(n => `
+                                            <tr><td><strong>${n}</strong></td><td>+91 98765 0${Math.floor(Math.random()*9000)+1000}</td><td>${H_NAMES[Math.floor(Math.random()*5)].area}</td><td>${Math.floor(Math.random()*12)}</td><td><span class="pill p-online">verified</span></td></tr>
+                                        `).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
-                    </div>
-                `;
+                    `;
+                    break;
+
+                case 'responders':
+                    view.innerHTML = `
+                        <div class="panel glass">
+                            <div class="table-container">
+                                <table>
+                                    <thead><tr><th>Responder</th><th>Designation</th><th>Earnings</th><th>Rating</th><th>Status</th></tr></thead>
+                                    <tbody>
+                                        ${C_NAMES.slice(0,8).filter(n => n.toLowerCase().includes(q)).map(n => `
+                                            <tr><td><strong>${n}</strong></td><td>Paramedic Advanced</td><td>₹${Math.floor(Math.random()*2000)+500}</td><td>⭐ 4.${Math.floor(Math.random()*9)}</td><td><span class="pill ${Math.random() > 0.3 ? 'p-online' : 'p-offline'}">${Math.random() > 0.3 ? 'ONLINE' : 'OFFLINE'}</span></td></tr>
+                                        `).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    `;
+                    break;
+
+                case 'grid':
+                    view.innerHTML = `
+                        <div class="map-box" id="map-wrap">
+                            <div class="grid-bg"></div>
+                            <div id="pings"></div>
+                        </div>
+                    `;
+                    initMap();
+                    break;
+
+                case 'fiscal':
+                    view.innerHTML = `
+                        <div class="stat-row">
+                            <div class="stat-card glass"><h4>Pending Commission</h4><span class="val" style="color:var(--warning)">₹${(Math.random()*500 + 100).toFixed(2)}</span></div>
+                            <div class="stat-card glass"><h4>Last Transaction</h4><span class="val">₹${Math.floor(Math.random()*900)+100}</span></div>
+                            <div class="stat-card glass"><h4>Total Payouts</h4><span class="val">₹82,450</span></div>
+                        </div>
+                        <div class="panel glass">
+                            <h3>Financial Ledger</h3>
+                            <div class="table-container">
+                                <table>
+                                    <thead><tr><th>Entity</th><th>Amount</th><th>Type</th><th>Ref ID</th><th>Status</th></tr></thead>
+                                    <tbody>
+                                        ${H_NAMES.map(h => `<tr><td>${h.name}</td><td>₹${Math.floor(Math.random()*500)+150}</td><td>Commission</td><td>#TX-${Math.random().toString(36).substr(2,6).toUpperCase()}</td><td><span class="pill p-online">Received</span></td></tr>`).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    `;
+                    break;
+
+                case 'partners':
+                    view.innerHTML = `
+                        <div class="panel glass">
+                            <div class="table-container">
+                                <table>
+                                    <thead><tr><th>Hospital</th><th>Admin</th><th>Location</th><th>Status</th><th>Action</th></tr></thead>
+                                    <tbody>
+                                        ${H_NAMES.filter(h => h.name.toLowerCase().includes(q)).map(h => `
+                                            <tr><td><strong>${h.name}</strong></td><td>${h.admin}</td><td>${h.area}</td><td><span class="pill ${h.status == 'Priority' ? 'p-warn' : 'p-online'}">${h.status}</span></td><td><button class="action-btn">MESSAGRE</button> <button class="action-btn">PROMOTE</button></td></tr>
+                                        `).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    `;
+                    break;
+
+                default:
+                    view.innerHTML = `<div class="panel glass" style="text-align:center; padding:100px;"><h2>NODE UNDER MAINTENANCE</h2><p style="color:var(--dim)">Establishing connection to ${v} logic...</p></div>`;
             }
-            else if(currentModule === 'geo') {
-                vp.innerHTML = `
-                    <div class="map-container" id="map-world"></div>
-                    <div style="margin-top:20px; display:grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap:10px;">
-                        <div class="card" style="padding:10px; font-size:0.8rem;">● KPHB Node: Active</div>
-                        <div class="card" style="padding:10px; font-size:0.8rem;">● JNTU Node: Idle</div>
-                        <div class="card" style="padding:10px; font-size:0.8rem;">● Miyapur Node: High Load</div>
-                    </div>
-                `;
-                initMap();
+        }
+
+        /* --- SIMULATION ENGINE --- */
+        function startSimulation() {
+            setInterval(() => {
+                const now = new Date();
+                document.getElementById('clock').innerText = now.toLocaleTimeString();
+                
+                stats.ops = 35 + Math.floor(Math.random() * 15);
+                if(currentView === 'hub') {
+                    const el = document.getElementById('stat-active');
+                    if(el) el.innerText = stats.ops;
+                }
+
+                if(Math.random() > 0.8) {
+                    const msgs = ["New Emergency: KPHB Phase 1", "Responder Vikram Online", "Payment Received from Omni Care", "System sync complete"];
+                    pushToast(msgs[Math.floor(Math.random()*msgs.length)]);
+                }
+            }, 1000);
+        }
+
+        function genChart(id) {
+            const wrap = document.getElementById(id);
+            if(!wrap) return;
+            for(let i=0; i<12; i++) {
+                const b = document.createElement('div');
+                b.className = 'bar';
+                b.style.height = '0%';
+                wrap.appendChild(b);
+                setTimeout(() => b.style.height = (Math.random()*80 + 20) + '%', 100 * i);
             }
-            else if(currentModule === 'fiscal') {
-                vp.innerHTML = `
-                    <div class="stat-grid">
-                        <div class="card"><span class="card-val">₹8.4M</span>Total Revenue</div>
-                        <div class="card"><span class="card-val" style="color:var(--success)">₹1.2M</span>Net Commission</div>
-                        <div class="card"><span class="card-val" style="color:var(--warning)">₹400k</span>Pending Payouts</div>
-                    </div>
-                `;
-            }
-            else {
-                vp.innerHTML = `<div class="card" style="text-align:center; padding:100px;"><h2>${currentModule.toUpperCase()} NODE</h2><p style="color:var(--text-dim)">This operational module is currently synchronizing with the central quantum database.</p></div>`;
-            }
+        }
+
+        function pushToast(m) {
+            const wrap = document.getElementById('toast-wrap');
+            const t = document.createElement('div');
+            t.className = 'toast';
+            t.innerHTML = `<div style="font-weight:800; color:var(--primary); font-size:0.7rem; margin-bottom:5px;">SYSTEM ALERT</div><div style="font-size:0.85rem;">${m}</div>`;
+            wrap.appendChild(t);
+            setTimeout(() => { t.style.opacity = '0'; t.style.transform = 'translateX(50px)'; setTimeout(() => t.remove(), 500); }, 4000);
         }
 
         function initMap() {
-            const map = document.getElementById('map-world');
-            if(!map) return;
-            for(let i=0; i<8; i++) {
-                const amb = document.createElement('div');
-                amb.className = 'amb-unit';
-                amb.style.left = Math.random() * 90 + '%';
-                amb.style.top = Math.random() * 90 + '%';
-                map.appendChild(amb);
-                
-                setInterval(() => {
-                    amb.style.left = Math.random() * 90 + '%';
-                    amb.style.top = Math.random() * 90 + '%';
-                }, 4000 + Math.random() * 2000);
+            const wrap = document.getElementById('map-wrap');
+            const pings = document.getElementById('pings');
+            H_NAMES.forEach(h => {
+                const p = document.createElement('div');
+                p.className = 'emergency-ping';
+                p.style.left = Math.random()*80 + 10 + '%';
+                p.style.top = Math.random()*80 + 10 + '%';
+                pings.appendChild(p);
+            });
+            for(let i=0; i<6; i++) {
+                const a = document.createElement('div');
+                a.className = 'amb';
+                a.style.left = Math.random()*90 + '%';
+                a.style.top = Math.random()*90 + '%';
+                wrap.appendChild(a);
+                setInterval(() => { a.style.left = Math.random()*90 + '%'; a.style.top = Math.random()*90 + '%'; }, 4000 + (i*500));
             }
         }
 
-        function simEvents() {
-            const events = [
-                "Emergency assigned to Unit Alpha-9",
-                "New Citizen registration from Kukatpally",
-                "Hospital Omni Care priority upgraded",
-                "System maintenance scheduled for 02:00 AM"
-            ];
-            const msg = events[Math.floor(Math.random() * events.length)];
-            pushNotify(msg);
-        }
-
-        function pushNotify(msg) {
-            const box = document.getElementById('notifier');
-            const alert = document.createElement('div');
-            alert.className = 'alert';
-            alert.innerHTML = `<div style="font-weight:bold; color:var(--primary); font-size:0.7rem; margin-bottom:5px;">SYSTEM ALERT</div><div style="font-size:0.85rem;">${msg}</div>`;
-            box.appendChild(alert);
-            setTimeout(() => {
-                alert.style.opacity = '0';
-                alert.style.transform = 'translateX(50px)';
-                setTimeout(() => alert.remove(), 500);
-            }, 5000);
-        }
-
-        function filterView() {
-            renderModule();
+        function doSearch() {
+            render(currentView);
         }
     </script>
 </body>
